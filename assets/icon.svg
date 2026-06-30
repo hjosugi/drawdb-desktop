@@ -1,0 +1,37 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>drawDB Desktop icon</title>
+  <defs>
+    <linearGradient id="bg" x1="80" y1="48" x2="432" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#18304A"/>
+      <stop offset="0.52" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#0B4A6F"/>
+    </linearGradient>
+    <linearGradient id="disk" x1="168" y1="128" x2="344" y2="352" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#BDEDE5"/>
+    </linearGradient>
+    <filter id="shadow" x="58" y="54" width="396" height="404" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#031926" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+
+  <rect x="48" y="48" width="416" height="416" rx="92" fill="url(#bg)"/>
+  <path d="M138 328C172 380 224 408 286 408C346 408 398 378 426 328" stroke="#61D6C8" stroke-width="18" stroke-linecap="round" opacity="0.36"/>
+
+  <g filter="url(#shadow)">
+    <path d="M158 160C158 132.386 201.876 110 256 110C310.124 110 354 132.386 354 160V330C354 357.614 310.124 380 256 380C201.876 380 158 357.614 158 330V160Z" fill="url(#disk)"/>
+    <ellipse cx="256" cy="160" rx="98" ry="50" fill="#F8FAFC"/>
+    <ellipse cx="256" cy="160" rx="64" ry="26" stroke="#0F766E" stroke-width="12" opacity="0.72"/>
+    <path d="M158 218C158 245.614 201.876 268 256 268C310.124 268 354 245.614 354 218" stroke="#0F766E" stroke-width="14" opacity="0.42"/>
+    <path d="M158 278C158 305.614 201.876 328 256 328C310.124 328 354 305.614 354 278" stroke="#0F766E" stroke-width="14" opacity="0.42"/>
+  </g>
+
+  <path d="M132 182H96C82.745 182 72 192.745 72 206V254" stroke="#F59E0B" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M380 182H416C429.255 182 440 192.745 440 206V254" stroke="#F59E0B" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M132 334H96C82.745 334 72 323.255 72 310V278" stroke="#F59E0B" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M380 334H416C429.255 334 440 323.255 440 310V278" stroke="#F59E0B" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="86" y="240" width="52" height="52" rx="16" fill="#FFE3A6" stroke="#FFFFFF" stroke-width="10"/>
+  <rect x="374" y="240" width="52" height="52" rx="16" fill="#FFE3A6" stroke="#FFFFFF" stroke-width="10"/>
+  <circle cx="256" cy="256" r="18" fill="#0B4A6F"/>
+</svg>
