@@ -79,6 +79,7 @@ import { fromOracle } from "../../data/importSQL/oracle";
 import { fromMySQL } from "../../data/importSQL/mysqlEnhanced";
 import { fromPostgres } from "../../data/importSQL/postgres";
 import { FilePathContext } from "../../context/FilePathContext";
+import { setLocale, t } from "../../i18n/index.js";
 
 async function openDdb() {
   const p = await pickOpen("ddb"); if (!p) return;
@@ -119,19 +120,19 @@ function detectDialect(text) {
   // PostgreSQL first (SERIAL/BYTEA/JSONB/AS ENUM are PG-specific; COMMENT ON is
   // shared with Oracle so it must not be the deciding signal).
   if (/\b(SERIAL|BIGSERIAL|SMALLSERIAL|BYTEA|JSONB)\b|AS\s+ENUM|nextval\(|::[a-z]/i.test(text))
-    return { db: "postgres", parse: fromPostgres };
+    return { dialect: "postgres", parse: fromPostgres };
   if (/VARCHAR2|NUMBER\s*\(|GENERATED\s+(?:ALWAYS|BY\s+DEFAULT)\s+AS\s+IDENTITY/i.test(text))
-    return { db: "oracle", parse: fromOracle };
-  return { db: "mysql", parse: fromMySQL }; // backtick-quoted, AUTO_INCREMENT, ENGINE=
+    return { dialect: "oracle", parse: fromOracle };
+  return { dialect: "mysql", parse: fromMySQL }; // backtick-quoted, AUTO_INCREMENT, ENGINE=
 }
 async function openSqlDdl() {
   const p = await pickOpen("sql"); if (!p) return;
   const text = await readTextFile(p);
-  const { db, parse } = detectDialect(text);
+  const { dialect, parse } = detectDialect(text);
   const parsed = parse(text);
   const diag = {
     name: p.replace(/^.*[\\/]/, "").replace(/\.sql$/i, ""),
-    database: db,
+    database: dialect,
     ...parsed, notes: [], areas: [], types: [], enums: [],
     transform: { zoom: 1, pan: { x: 0, y: 0 } },
   };
@@ -153,18 +154,24 @@ async function importPack() {
   if (!p) return;
   await importFromPack(p, { merge: true });
 }
+function changeLocale(locale) {
+  setLocale(locale);
+  window.location.reload();
+}
 
 const fileMenuExtras = desktopAvailable() ? {
-  "Open .ddb…": { function: openDdb, shortcut: "Ctrl+O" },
-  "Save":       { function: saveDdb, shortcut: "Ctrl+S" },
-  "Save As .ddb…": { function: saveAsDdb, shortcut: "Ctrl+Shift+S" },
-  "Open Excel (.xlsx)…":  { function: openExcel },
-  "Export Excel (.xlsx)…":{ function: exportExcel },
-  "Open SQL (Oracle/MySQL/PostgreSQL)…": { function: openSqlDdl },
-  "Export SQL Oracle…":     { function: () => exportSql(toOracle, "oracle") },
-  "Export SQL MySQL…":      { function: () => exportSql(toMySQL,  "mysql") },
-  "Export SQL PostgreSQL…": { function: () => exportSql(toPostgres, "postgres") },
-  "Export Project (.ddbpack)…":{ function: exportPack },
-  "Import Project (.ddbpack)…":{ function: importPack },
+  [t("menu.openDdb")]: { function: openDdb, shortcut: "Ctrl+O" },
+  [t("menu.saveDdb")]: { function: saveDdb, shortcut: "Ctrl+S" },
+  [t("menu.saveAsDdb")]: { function: saveAsDdb, shortcut: "Ctrl+Shift+S" },
+  [t("menu.openExcel")]: { function: openExcel },
+  [t("menu.exportExcel")]: { function: exportExcel },
+  [t("menu.openSqlDdl")]: { function: openSqlDdl },
+  [t("menu.exportSqlOracle")]: { function: () => exportSql(toOracle, "oracle") },
+  [t("menu.exportSqlMySQL")]: { function: () => exportSql(toMySQL, "mysql") },
+  [t("menu.exportSqlPostgres")]: { function: () => exportSql(toPostgres, "postgres") },
+  [t("menu.exportPack")]: { function: exportPack },
+  [t("menu.importPack")]: { function: importPack },
+  [t("menu.languageEnglish")]: { function: () => changeLocale("en") },
+  [t("menu.languageJapanese")]: { function: () => changeLocale("ja") },
 } : {};
 ```

@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { db } from "../data/db";
 import { readBinaryFile, writeBinaryFile, serializeDdb, parseDdb } from "./desktopIO";
+import { t } from "../i18n/index.js";
 
 const MANIFEST = "manifest.json";
 const sanitize = (s) => (s || "untitled").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
@@ -32,9 +33,9 @@ export async function importFromPack(path, { merge = true } = {}) {
   const bytes = await readBinaryFile(path);
   const zip = await JSZip.loadAsync(bytes);
   const raw = await zip.file(MANIFEST)?.async("string");
-  if (!raw) throw new Error("manifest.json not found in .ddbpack");
+  if (!raw) throw new Error(t("error.missingDdbPackManifest"));
   const manifest = JSON.parse(raw);
-  if (manifest.$format !== "drawdb-pack") throw new Error("Invalid .ddbpack format");
+  if (manifest.$format !== "drawdb-pack") throw new Error(t("error.invalidDdbPack"));
   if (!merge) await db.diagrams.clear();
   let imported = 0;
   for (const m of manifest.diagrams ?? []) {

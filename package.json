@@ -1,18 +1,20 @@
 {
   "name": "drawdb-desktop-overlay",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "description": "Desktop overlay for drawDB-App: .ddb/.ddbpack file storage, Excel I/O, and Oracle/MySQL/PostgreSQL SQL dialects for Tauri.",
   "license": "AGPL-3.0",
   "scripts": {
-    "test": "node tests/validate-config.mjs && node tests/smoke.mjs && node tests/excel.smoke.mjs",
+    "test": "node tests/validate-config.mjs && node tests/i18n.smoke.mjs && node tests/smoke.mjs && node tests/excel.smoke.mjs",
     "test:config": "node tests/validate-config.mjs",
+    "test:i18n": "node tests/i18n.smoke.mjs",
     "test:sql": "node tests/smoke.mjs",
     "test:excel": "node tests/excel.smoke.mjs",
     "icons": "python3 scripts/generate_icons.py"
   },
   "devDependencies": {
-    "exceljs": "^4.4.0"
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.1"
   }
 }

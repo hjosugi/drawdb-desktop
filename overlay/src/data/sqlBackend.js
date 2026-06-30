@@ -1,9 +1,10 @@
 // Optional SQLite backend via tauri-plugin-sql.
 import { desktopAvailable } from "../utils/desktopIO";
+import { t } from "../i18n/index.js";
 
 let _db = null;
 async function sqldb() {
-  if (!desktopAvailable()) throw new Error("SQL backend requires Tauri");
+  if (!desktopAvailable()) throw new Error(t("error.sqlBackendRequiresTauri"));
   if (!_db) {
     const { default: Database } = await import("@tauri-apps/plugin-sql");
     _db = await Database.load("sqlite:drawdb.db");

@@ -1,4 +1,6 @@
 // Tauri 検知 + fs/dialog/event のラッパ
+import { t } from "../i18n/index.js";
+
 const isTauri = () =>
   typeof window !== "undefined" && !!window.__TAURI_INTERNALS__;
 
@@ -7,10 +9,15 @@ async function fs()  { if (!_fs)  _fs  = await import("@tauri-apps/plugin-fs"); 
 async function dlg() { if (!_dlg) _dlg = await import("@tauri-apps/plugin-dialog"); return _dlg; }
 async function evt() { if (!_evt) _evt = await import("@tauri-apps/api/event");     return _evt; }
 
-const DDB_FILTERS  = [{ name: "drawDB Diagram", extensions: ["ddb", "json"] }];
-const PACK_FILTERS = [{ name: "drawDB Project", extensions: ["ddbpack"] }];
-const XLSX_FILTERS = [{ name: "Excel Workbook", extensions: ["xlsx"] }];
-const SQL_FILTERS  = [{ name: "SQL Script", extensions: ["sql"] }];
+function filters(kind) {
+  const m = {
+    ddb: [{ name: t("file.drawdbDiagram"), extensions: ["ddb", "json"] }],
+    pack: [{ name: t("file.drawdbProject"), extensions: ["ddbpack"] }],
+    xlsx: [{ name: t("file.excelWorkbook"), extensions: ["xlsx"] }],
+    sql: [{ name: t("file.sqlScript"), extensions: ["sql"] }],
+  };
+  return m[kind] ?? m.ddb;
+}
 
 export const desktopAvailable = isTauri;
 
@@ -23,15 +30,13 @@ export async function onOpenFile(handler) {
 export async function pickOpen(kind = "ddb") {
   if (!isTauri()) return null;
   const { open } = await dlg();
-  const m = { ddb: DDB_FILTERS, pack: PACK_FILTERS, xlsx: XLSX_FILTERS, sql: SQL_FILTERS };
-  return await open({ multiple: false, filters: m[kind] ?? DDB_FILTERS });
+  return await open({ multiple: false, filters: filters(kind) });
 }
 
 export async function pickSave(defaultName, kind = "ddb") {
   if (!isTauri()) return null;
   const { save } = await dlg();
-  const m = { ddb: DDB_FILTERS, pack: PACK_FILTERS, xlsx: XLSX_FILTERS, sql: SQL_FILTERS };
-  return await save({ defaultPath: defaultName, filters: m[kind] ?? DDB_FILTERS });
+  return await save({ defaultPath: defaultName, filters: filters(kind) });
 }
 
 export async function readTextFile(path)   { const { readTextFile } = await fs(); return readTextFile(path); }
@@ -53,7 +58,9 @@ export function serializeDdb(d) {
 }
 export function parseDdb(text) {
   const o = JSON.parse(text);
-  if (o.$format && o.$format !== "drawdb-file") throw new Error("Unknown .ddb format: " + o.$format);
+  if (o.$format && o.$format !== "drawdb-file") {
+    throw new Error(t("error.unknownDdbFormat", { format: o.$format }));
+  }
   return o;
 }
 

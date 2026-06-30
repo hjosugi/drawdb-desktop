@@ -1,8 +1,8 @@
-# HANDOVER.md — drawDB Desktop Overlay v2.0 引き継ぎログ
+# HANDOVER.md — drawDB Desktop Overlay 引き継ぎログ
 
-最終更新: 2026-06-30 16:37 JST
+最終更新: 2026-06-30 JST
 作成元: Copilot (Claude Opus 4.7) との対話
-配布物: drawdb-desktop-overlay-v2.zip (約27KB / 24ファイル)
+配布物: drawdb-desktop-overlay-v2 系列
 
 ---
 
@@ -61,6 +61,7 @@ drawDB-io/drawdb を Tauri 2.0 でデスクトップアプリ化した khsuzan/d
 | F15 | Excel 書式付き出力（exceljs に切替, T8） | utils/excelIO.js | Node round-trip pass |
 | F16 | アイコン一式生成（T4） | scripts/generate_icons.py | 生成・検証済（png/ico/icns） |
 | F17 | クロスプラットフォーム CI/CD（T5） | .github/workflows/{ci,release}.yml | YAML 検証済 |
+| F18 | EN/JA i18n（T7） | src/i18n + desktop menu/dialog/error labels | Node smoke pass |
 
 ### v2.1 で完了したタスク（旧タスクリストより）
 - **T4 アイコン生成** … `scripts/generate_icons.py`（Pillow）。ソース PNG 省略時は既定の
@@ -71,15 +72,18 @@ drawDB-io/drawdb を Tauri 2.0 でデスクトップアプリ化した khsuzan/d
   NUMERIC / BYTEA / JSONB / UUID / `COMMENT ON` / INDEX / FK(ON DELETE・UPDATE)。round-trip 検証済。
 - **T8 Excel 書式** … `xlsx`(SheetJS) → `exceljs` に切替。ヘッダ塗り/太字/罫線、列幅、
   オートフィルタ、ウィンドウ枠固定、ゼブラ。`buildWorkbook`/`workbookToDiagram` に分離し CI でテスト可能化。
+- **T7 EN/JA i18n** … `src/i18n` に英日辞書と `t()`/locale helper を追加。desktop overlay の
+  File メニュー、ファイルダイアログ、エラー文言を英日切替対応。未対応言語は英語へフォールバック。
 
 #### スモークテスト（`npm test`）
 - `tests/smoke.mjs` … Oracle / MySQL / PostgreSQL の export と round-trip（PG は ENUM/SERIAL/NUMERIC まで検証）。
 - `tests/excel.smoke.mjs` … exceljs のインメモリ round-trip（書式 + データ往復）。
+- `tests/i18n.smoke.mjs` … EN/JA キー一致、locale正規化、fallback、パラメータ展開を検証。
 - `tests/validate-config.mjs` … `tauri.conf.json` / `capabilities/default.json` の JSON 検証。
 
 ---
 
-## 4. ファイル構成（24ファイル）
+## 4. 主なファイル構成
 
 ```
 drawdb-desktop-overlay-v2/
@@ -88,6 +92,7 @@ drawdb-desktop-overlay-v2/
 +- HANDOVER.md                          <- この文書
 +- setup.ps1                            <- Windows 自動セットアップ
 +- setup.sh                             <- Mac/Linux 自動セットアップ
++- tests/i18n.smoke.mjs                <- EN/JA i18n 検証
 +- tests/smoke.mjs                      <- Oracle/MySQL ラウンドトリップ検証
 +- overlay/                             <- drawDB-App に上書きコピーする内容
    +- package.json.fragment.md
@@ -99,6 +104,7 @@ drawdb-desktop-overlay-v2/
    |  +- src/{main.rs, lib.rs}
    +- src/
       +- context/FilePathContext.jsx
+      +- i18n/{index.js,locales/en.js,locales/ja.js}
       +- utils/{desktopIO.js, ddbpack.js, excelIO.js}
       +- data/
       |  +- sqlBackend.js
@@ -166,7 +172,8 @@ git clone https://github.com/khsuzan/drawDB-App.git drawDB-Desktop
 xcopy /E /I /Y overlay\* drawDB-Desktop\
 cd drawDB-Desktop
 npm i
-npm i jszip xlsx @tauri-apps/plugin-fs @tauri-apps/plugin-dialog @tauri-apps/plugin-single-instance @tauri-apps/plugin-sql
+npm i jszip exceljs @tauri-apps/api @tauri-apps/plugin-fs @tauri-apps/plugin-dialog @tauri-apps/plugin-single-instance @tauri-apps/plugin-sql
+npm uninstall xlsx
 cd src-tauri
 cargo add tauri-plugin-fs
 cargo add tauri-plugin-dialog
@@ -244,7 +251,7 @@ Tauri の fileAssociations は、Win/Linux で tauri-plugin-deep-link の onOpen
 | ~~T4~~ | ✅ **完了** アイコン .ico/.icns/.png 一式 | `scripts/generate_icons.py` で生成・検証済 | — | — |
 | ~~T5~~ | ✅ **完了** GitHub Actions CI/CD (tauri-action) | `.github/workflows/{ci,release}.yml` | — | Release は Secrets/署名のみ別途 |
 | ~~T6~~ | ✅ **完了** PostgreSQL ダイアレクト | `postgres.js` export+import, round-trip 検証済（SQL Server は未対応として残置） | — | — |
-| T7 | 日本語 i18n (ja.json) | UIメニュー全翻訳 | 半日 | drawDB 既存 i18n キー一覧 |
+| ~~T7~~ | ✅ **完了** EN/JA i18n | desktop overlay のメニュー/ダイアログ/エラー文言を英日対応 | — | — |
 | ~~T8~~ | ✅ **完了** Excel 書式付き出力 (色/罫線/AutoFilter) | `excelIO.js` を exceljs 化, 枠固定/ゼブラ含む | — | — |
 | T9 | 自動アップデータ (tauri-plugin-updater) | 起動時に新版検出 | 2h | 配信エンドポイント (GitHub Releases) + ed25519 鍵 |
 | T10 | Sentry クラッシュ報告 | DSN 設定済み | 1h | Sentry プロジェクト |
@@ -292,7 +299,7 @@ Tauri の fileAssociations は、Win/Linux で tauri-plugin-deep-link の onOpen
 - drawDB 本家: https://github.com/drawdb-io/drawdb
 - khsuzan フォーク (Tauri base): https://github.com/khsuzan/drawDB-App
 - Tauri 2.0 公式: https://v2.tauri.app/
-- xlsx (SheetJS): https://docs.sheetjs.com/
+- ExcelJS: https://github.com/exceljs/exceljs
 - JSZip: https://stuk.github.io/jszip/
 
 ### Tauri プラグイン
@@ -308,12 +315,10 @@ Tauri の fileAssociations は、Win/Linux で tauri-plugin-deep-link の onOpen
 
 ## 12. 次に進むときの推奨順序
 
-1. T4 アイコン生成 (30分) → 配布物がそれっぽくなる
-2. 実機ビルド検証 (T15) → setup.ps1 を試し、エラーがあれば即修正
-3. T5 GitHub Actions (2h) → 配布の自動化
-4. T9 自動アップデータ (2h) → 運用開始の前提
-5. T1〜T3 署名・notarization (数日〜2週) → 一般配布の関門
-6. その後 T6 (PostgreSQL/SQL Server) / T7 (i18n) / T8 (Excel書式) を要件に応じて
+1. 実機ビルド検証 (T15) → setup.ps1 / setup.sh を試し、保存・関連付け・EN/JA切替を確認
+2. T9 自動アップデータ (2h) → 運用開始の前提
+3. T1〜T3 署名・notarization (数日〜2週) → 一般配布の関門
+4. 必要に応じて T10〜T14 を実装
 
 ---
 
@@ -326,6 +331,7 @@ Tauri の fileAssociations は、Win/Linux で tauri-plugin-deep-link の onOpen
 | v2.0 | 2026-06-30 06:51 | 完全ソースZIP化 + Excel I/O + Oracle/MySQL 完全対応 |
 | v2.0+HANDOVER | 2026-06-30 07:30 | 引き継ぎログ追加 |
 | v2.1 | 2026-06-30 | T4 アイコン生成 / T5 CI・CD / T6 PostgreSQL / T8 Excel 書式 を実装。`npm test` でスモーク検証。リポジトリ化（package.json + .gitignore + tests/）。 |
+| v2.2 | 2026-06-30 | T7 EN/JA i18n、極小README、setup依存更新（exceljs/jszip/@tauri-apps/api）を追加。 |
 
 ---
 
