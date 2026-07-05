@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.drawdb.desktop</id>
+  <name>drawDB</name>
+  <summary>Database schema editor</summary>
+  <developer id="app.drawdb">
+    <name>drawDB contributors</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0</project_license>
+  <description>
+    <p>drawDB is a database diagram editor and SQL generator for designing, sharing, and exporting schema diagrams.</p>
+  </description>
+  <content_rating type="oars-1.1"/>
+  <url type="homepage">https://github.com/hjosugi/drawdb-desktop</url>
+  <launchable type="desktop-id">drawDB.desktop</launchable>
+  <provides>
+    <mediatype>application/x-drawdb</mediatype>
+    <mediatype>application/x-drawdbpack</mediatype>
+  </provides>
+</component>

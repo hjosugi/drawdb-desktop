@@ -52,7 +52,7 @@
         "name": "drawDB Diagram",
         "description": "drawDB diagram file",
         "role": "Editor",
-        "mimeType": "application/json"
+        "mimeType": "application/x-drawdb"
       },
       {
         "ext": [
@@ -61,7 +61,7 @@
         "name": "drawDB Project Pack",
         "description": "drawDB project package",
         "role": "Editor",
-        "mimeType": "application/zip"
+        "mimeType": "application/x-drawdbpack"
       }
     ],
     "windows": {
@@ -81,13 +81,47 @@
       }
     },
     "linux": {
+      "appimage": {
+        "files": {
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdb.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdbpack.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdb.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdbpack.png": "icons/128x128.png",
+          "/usr/share/metainfo/app.drawdb.desktop.metainfo.xml": "linux/app.drawdb.desktop.metainfo.xml",
+          "/usr/share/mime/packages/app.drawdb.desktop.xml": "linux/app.drawdb.desktop.xml"
+        }
+      },
+      "deb": {
+        "desktopTemplate": "linux/drawdb.desktop.hbs",
+        "files": {
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdb.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdbpack.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdb.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdbpack.png": "icons/128x128.png",
+          "/usr/share/metainfo/app.drawdb.desktop.metainfo.xml": "linux/app.drawdb.desktop.metainfo.xml",
+          "/usr/share/mime/packages/app.drawdb.desktop.xml": "linux/app.drawdb.desktop.xml"
+        },
+        "postInstallScript": "linux/update-desktop-mime-cache.sh",
+        "postRemoveScript": "linux/update-desktop-mime-cache.sh"
+      },
       "rpm": {
+        "desktopTemplate": "linux/drawdb.desktop.hbs",
+        "files": {
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdb.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdbpack.png": "icons/32x32.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdb.png": "icons/128x128.png",
+          "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdbpack.png": "icons/128x128.png",
+          "/usr/share/metainfo/app.drawdb.desktop.metainfo.xml": "linux/app.drawdb.desktop.metainfo.xml",
+          "/usr/share/mime/packages/app.drawdb.desktop.xml": "linux/app.drawdb.desktop.xml"
+        },
         "depends": [
           "webkit2gtk4.1",
           "gtk3",
           "libappindicator-gtk3",
           "librsvg2"
-        ]
+        ],
+        "postInstallScript": "linux/update-desktop-mime-cache.sh",
+        "postRemoveScript": "linux/update-desktop-mime-cache.sh"
       }
     }
   }

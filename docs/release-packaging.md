@@ -59,6 +59,50 @@ the build matrix, inspects the `.rpm`, installs it with `dnf` in a Fedora
 container, verifies the installed package and binary, runs a bounded Xvfb launch
 smoke test, and removes it.
 
+## Linux file associations
+
+The Linux `.deb` and `.rpm` packages are expected to register drawDB as the
+default-capable editor for `.ddb` and `.ddbpack` files:
+
+- `bundle.fileAssociations` uses drawDB-owned MIME types:
+  `application/x-drawdb` and `application/x-drawdbpack`.
+- `overlay/src-tauri/linux/app.drawdb.desktop.xml` defines the shared MIME
+  database globs for `*.ddb` and `*.ddbpack`.
+- The Tauri Linux package `files` maps install that MIME XML, AppStream
+  metadata, and hicolor mimetype icons into `.deb`, `.rpm`, and `.AppImage`
+  layouts.
+- `.deb` and `.rpm` post-install/post-remove hooks refresh the shared MIME,
+  desktop, and hicolor icon caches when the host distribution provides those
+  cache tools.
+- `overlay/src-tauri/linux/drawdb.desktop.hbs` keeps `MimeType=` aligned with
+  the Tauri file associations and sets `Exec={{exec}} %F` so file managers pass
+  selected local files through argv.
+
+Manual release validation for installed `.deb` and `.rpm` packages should
+include:
+
+```sh
+xdg-mime query filetype sample.ddb
+xdg-mime query filetype sample.ddbpack
+xdg-mime query default application/x-drawdb
+xdg-mime query default application/x-drawdbpack
+grep '^Exec=' /usr/share/applications/drawDB.desktop
+```
+
+The expected MIME filetype values are `application/x-drawdb` and
+`application/x-drawdbpack`; the expected default handler is `drawDB.desktop`.
+The `Exec=` line must keep `%F`. Complete release sign-off still requires
+double-click testing on Ubuntu GNOME and Fedora KDE with the app closed and with
+an existing drawDB instance already running.
+
+AppImage remains a portable artifact and does not automatically install or claim
+system file associations by itself. The AppImage includes the same desktop,
+MIME, mimetype icon, and AppStream metadata for integration tools, but users must
+integrate it with Gear Lever, appimaged, or an equivalent desktop integration
+tool before `xdg-mime default drawDB.desktop application/x-drawdb
+application/x-drawdbpack` can be expected to persist. Any manual AppImage
+desktop entry must preserve `%F` in `Exec=` for file-manager opens.
+
 ## Linux distribution policy
 
 | Channel | Policy |

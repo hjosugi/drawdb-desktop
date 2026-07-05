@@ -32,6 +32,9 @@ download step.
 RPM is a first-party Linux package. The release workflow downloads the Linux x64
 RPM artifact and Fedora-install-and-headless-launch-smoke-tests it in CI with
 `dnf`, D-Bus, and Xvfb; full GUI release validation remains tracked separately.
+Linux `.deb` and `.rpm` packages include drawDB MIME metadata for `.ddb` and
+`.ddbpack`. AppImage is portable and does not auto-register file associations
+unless the user integrates it with Gear Lever, appimaged, or an equivalent tool.
 
 Flatpak, AUR, and Snap publishing are deferred until release asset names are
 stable, the required store/registry credentials are available, and the relevant

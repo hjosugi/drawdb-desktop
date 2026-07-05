@@ -27,6 +27,9 @@ Windows の NSIS / MSI インストーラーは WebView2 Runtime の offline ins
 インストールして起動できる方針です。
 
 RPM は first-party の Linux パッケージです。release workflow は Linux x64 RPM 成果物をダウンロードし、Fedora コンテナ上で `dnf`、D-Bus、Xvfb によるインストールと headless launch smoke test を CI 実行します。GUI を含むリリース検証は別途記録します。
+Linux の `.deb` / `.rpm` には `.ddb` と `.ddbpack` 用の drawDB MIME
+metadata を含めます。AppImage は portable artifact のため、Gear Lever、
+appimaged、または同等のツールで統合しない限り、ファイル関連付けは自動登録されません。
 
 Flatpak、AUR、Snap の公開は、Release の成果物名が安定し、必要なストア/レジストリ認証情報と各パッケージ方針レビューを用意できるまで延期します。
 

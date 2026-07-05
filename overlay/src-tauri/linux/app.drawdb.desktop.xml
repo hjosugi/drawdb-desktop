@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-drawdb">
+    <comment>drawDB diagram file</comment>
+    <sub-class-of type="application/json"/>
+    <glob pattern="*.ddb" weight="80"/>
+    <icon name="application-x-drawdb"/>
+  </mime-type>
+  <mime-type type="application/x-drawdbpack">
+    <comment>drawDB project package</comment>
+    <sub-class-of type="application/zip"/>
+    <glob pattern="*.ddbpack" weight="80"/>
+    <icon name="application-x-drawdbpack"/>
+  </mime-type>
+</mime-info>

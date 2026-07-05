@@ -14,10 +14,10 @@ hosted-runner builds as physical-device validation.
 | Windows 11 ARM64 | NSIS `.exe` with WebView2 `offlineInstaller` | Build artifact from `windows-11-arm`; config test enforces `bundle.windows.webviewInstallMode` | Pending ARM device or VM install, launch, feature, and uninstall checks | MSI ARM64 remains deferred until device verification. |
 | macOS Intel | `.dmg`, `.app` | Build artifacts from `macos-latest` with `x86_64-apple-darwin` | Pending Intel Mac install, launch, feature, and uninstall checks | Hosted macOS builds do not prove Finder association or user launch behavior. |
 | macOS Apple Silicon | `.dmg`, `.app` | Build artifacts from `macos-latest` with `aarch64-apple-darwin` | Pending Apple Silicon Mac install, launch, feature, and uninstall checks | Physical hardware is preferred for release sign-off. |
-| Ubuntu 22.04 x64 | `.deb`, `.rpm`, `.AppImage` | Build artifacts from `ubuntu-22.04` | Pending VM or physical install, launch, feature, and uninstall checks | Ubuntu 22.04 is the Linux glibc baseline. |
-| Ubuntu 22.04 ARM64 | `.deb`, `.rpm`, `.AppImage` | Build artifacts from `ubuntu-22.04-arm` | Pending ARM VM or physical install, launch, feature, and uninstall checks | No hosted install smoke test is claimed. |
-| Ubuntu 24.04 x64 | `.deb`, `.AppImage` from the Ubuntu 22.04 x64 build | No separate build; compatibility is expected from the 22.04 baseline | Pending VM or physical install, launch, feature, and uninstall checks | Record any dependency gap before release. |
-| Fedora latest x64 | `.rpm` from the Ubuntu 22.04 x64 build | Fedora container RPM inspection, `dnf install`, package and binary presence check, Xvfb headless launch smoke, and `dnf remove` | Pending full desktop feature checks on a VM or physical Fedora install | The CI smoke test covers package installability and startup, not the full GUI feature matrix. |
+| Ubuntu 22.04 x64 | `.deb`, `.rpm`, `.AppImage` | Build artifacts from `ubuntu-22.04` | Pending VM or physical install, launch, feature, association, and uninstall checks | Ubuntu 22.04 is the Linux glibc baseline; `.deb`/`.rpm` should install `application/x-drawdb` and `application/x-drawdbpack` metadata, while AppImage association requires external desktop integration. |
+| Ubuntu 22.04 ARM64 | `.deb`, `.rpm`, `.AppImage` | Build artifacts from `ubuntu-22.04-arm` | Pending ARM VM or physical install, launch, feature, association, and uninstall checks | No hosted install smoke test is claimed; validate `.deb`/`.rpm` associations manually. |
+| Ubuntu 24.04 x64 | `.deb`, `.AppImage` from the Ubuntu 22.04 x64 build | No separate build; compatibility is expected from the 22.04 baseline | Pending VM or physical install, launch, feature, association, and uninstall checks | Record any dependency gap before release; AppImage association is not automatic without Gear Lever, appimaged, or equivalent integration. |
+| Fedora latest x64 | `.rpm` from the Ubuntu 22.04 x64 build | Fedora container RPM inspection, `dnf install`, package and binary presence check, Xvfb headless launch smoke, and `dnf remove` | Pending full desktop feature and association checks on a VM or physical Fedora install | The CI smoke test covers package installability and startup, not full GUI or KDE file association behavior. |
 
 ## Manual checklist
 
@@ -30,7 +30,16 @@ For each target that requires manual release validation, record results in issue
 - Launch and new diagram creation.
 - `.ddb` save and open through the dialog.
 - `.ddbpack` save and open.
-- `.ddb` double-click association when the app is closed and already running.
+- `.ddb` and `.ddbpack` double-click association from installed `.deb` and
+  `.rpm` packages when the app is closed and already running.
+- On Linux, confirm `xdg-mime query default application/x-drawdb` and
+  `xdg-mime query default application/x-drawdbpack` return `drawDB.desktop`,
+  and confirm `/usr/share/applications/drawDB.desktop` keeps `%F` in `Exec=`.
+- On Ubuntu GNOME and Fedora KDE, test the association path on Wayland and X11
+  where both sessions are available.
+- For AppImage, record whether Gear Lever, appimaged, or a manual desktop
+  integration was used; automatic file association is not supported without that
+  integration.
 - Excel export/import round-trip.
 - SQL export for Oracle, MySQL, and PostgreSQL.
 - EN/JA switching and Japanese IME input.

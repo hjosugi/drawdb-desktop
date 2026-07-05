@@ -6,6 +6,15 @@ const jsonFiles = [
   "overlay/src-tauri/capabilities/default.json",
 ];
 
+const linuxMimeMetadataFiles = {
+  "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdb.png": "icons/32x32.png",
+  "/usr/share/icons/hicolor/32x32/mimetypes/application-x-drawdbpack.png": "icons/32x32.png",
+  "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdb.png": "icons/128x128.png",
+  "/usr/share/icons/hicolor/128x128/mimetypes/application-x-drawdbpack.png": "icons/128x128.png",
+  "/usr/share/metainfo/app.drawdb.desktop.metainfo.xml": "linux/app.drawdb.desktop.metainfo.xml",
+  "/usr/share/mime/packages/app.drawdb.desktop.xml": "linux/app.drawdb.desktop.xml",
+};
+
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
@@ -159,6 +168,72 @@ describe("shipped JSON config", () => {
     ]));
   });
 
+  it("declares Linux file associations with drawDB-specific MIME types", () => {
+    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const associations = Object.fromEntries(
+      config.bundle.fileAssociations.map((association) => [association.ext[0], association]),
+    );
+
+    expect(associations.ddb).toMatchObject({
+      name: "drawDB Diagram",
+      description: "drawDB diagram file",
+      role: "Editor",
+      mimeType: "application/x-drawdb",
+    });
+    expect(associations.ddbpack).toMatchObject({
+      name: "drawDB Project Pack",
+      description: "drawDB project package",
+      role: "Editor",
+      mimeType: "application/x-drawdbpack",
+    });
+    expect(Object.values(associations).map((association) => association.mimeType)).not.toEqual(expect.arrayContaining([
+      "application/json",
+      "application/zip",
+    ]));
+  });
+
+  it("packages Linux shared MIME, mimetype icons, and AppStream metadata", () => {
+    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const linux = config.bundle.linux;
+    const mimeXml = readFileSync("overlay/src-tauri/linux/app.drawdb.desktop.xml", "utf8");
+    const appStreamXml = readFileSync("overlay/src-tauri/linux/app.drawdb.desktop.metainfo.xml", "utf8");
+
+    expect(linux.deb.files).toMatchObject(linuxMimeMetadataFiles);
+    expect(linux.rpm.files).toMatchObject(linuxMimeMetadataFiles);
+    expect(linux.appimage.files).toMatchObject(linuxMimeMetadataFiles);
+    expect(mimeXml).toContain('<mime-type type="application/x-drawdb">');
+    expect(mimeXml).toContain('<sub-class-of type="application/json"/>');
+    expect(mimeXml).toContain('<glob pattern="*.ddb" weight="80"/>');
+    expect(mimeXml).toContain('<icon name="application-x-drawdb"/>');
+    expect(mimeXml).toContain('<mime-type type="application/x-drawdbpack">');
+    expect(mimeXml).toContain('<sub-class-of type="application/zip"/>');
+    expect(mimeXml).toContain('<glob pattern="*.ddbpack" weight="80"/>');
+    expect(mimeXml).toContain('<icon name="application-x-drawdbpack"/>');
+    expect(appStreamXml).toContain("<id>app.drawdb.desktop</id>");
+    expect(appStreamXml).toContain('<launchable type="desktop-id">drawDB.desktop</launchable>');
+    expect(appStreamXml).toContain("<mediatype>application/x-drawdb</mediatype>");
+    expect(appStreamXml).toContain("<mediatype>application/x-drawdbpack</mediatype>");
+  });
+
+  it("uses Linux desktop entries that pass selected files through argv", () => {
+    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const template = readFileSync("overlay/src-tauri/linux/drawdb.desktop.hbs", "utf8");
+    const cacheScript = readFileSync("overlay/src-tauri/linux/update-desktop-mime-cache.sh", "utf8");
+
+    expect(config.bundle.linux.deb.desktopTemplate).toBe("linux/drawdb.desktop.hbs");
+    expect(config.bundle.linux.rpm.desktopTemplate).toBe("linux/drawdb.desktop.hbs");
+    expect(config.bundle.linux.deb.postInstallScript).toBe("linux/update-desktop-mime-cache.sh");
+    expect(config.bundle.linux.deb.postRemoveScript).toBe("linux/update-desktop-mime-cache.sh");
+    expect(config.bundle.linux.rpm.postInstallScript).toBe("linux/update-desktop-mime-cache.sh");
+    expect(config.bundle.linux.rpm.postRemoveScript).toBe("linux/update-desktop-mime-cache.sh");
+    expect(template).toContain("Exec={{exec}} %F");
+    expect(template).toContain("MimeType={{mime_type}};");
+    expect(template).not.toContain("Exec={{exec}}\n");
+    expect(cacheScript).toContain("update-mime-database /usr/share/mime");
+    expect(cacheScript).toContain("update-desktop-database -q /usr/share/applications");
+    expect(cacheScript).toContain("gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor");
+  });
+
   it("bundles the WebView2 runtime installer for Windows 10 machines without WebView2", () => {
     const config = readJson("overlay/src-tauri/tauri.conf.json");
 
@@ -214,8 +289,12 @@ describe("shipped JSON config", () => {
     expect(readme).toContain("WebView2 Runtime offline installer");
     expect(releaseDocs).toContain("bundle.windows.webviewInstallMode");
     expect(releaseDocs).toContain("{ \"type\": \"offlineInstaller\" }");
+    expect(releaseDocs).toContain("application/x-drawdb");
+    expect(releaseDocs).toContain("Gear Lever");
+    expect(releaseDocs).toContain("appimaged");
     expect(validationMatrix).toContain("WebView2 `offlineInstaller`");
     expect(validationMatrix).toContain("WebView2 Runtime is absent before installation");
+    expect(validationMatrix).toContain("xdg-mime query default application/x-drawdb");
 
     for (const target of [
       "Windows 10 x64",
