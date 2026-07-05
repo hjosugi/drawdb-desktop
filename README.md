@@ -23,8 +23,8 @@ CI/manual verification coverage.
 | Linux | x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 
 RPM is a first-party Linux package. The release workflow downloads the Linux x64
-RPM artifact and Fedora-install-smoke-tests it in CI with `dnf`; full GUI release
-validation remains tracked separately.
+RPM artifact and Fedora-install-and-headless-launch-smoke-tests it in CI with
+`dnf`, D-Bus, and Xvfb; full GUI release validation remains tracked separately.
 
 Flatpak, AUR, and Snap publishing are deferred until release asset names are
 stable, the required store/registry credentials are available, and the relevant

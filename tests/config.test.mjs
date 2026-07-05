@@ -91,6 +91,9 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow).toContain("rpm -qp --requires");
     expect(releaseWorkflow).toContain("dnf install -y");
     expect(releaseWorkflow).toContain("command -v");
+    expect(releaseWorkflow).toContain("xorg-x11-server-Xvfb");
+    expect(releaseWorkflow).toContain("dbus-run-session");
+    expect(releaseWorkflow).toContain("WEBKIT_DISABLE_COMPOSITING_MODE=1");
     expect(releaseWorkflow).toContain("dnf remove -y");
   });
 
@@ -100,11 +103,11 @@ describe("shipped JSON config", () => {
     const readme = readFileSync("README.md", "utf8");
 
     expect(releaseDocs).toContain("first-party");
-    expect(releaseDocs).toContain("Fedora-install-smoke-tests");
+    expect(releaseDocs).toContain("Fedora-install-and-headless-launch-smoke-tests");
     expect(releaseDocs).toContain("Flatpak");
     expect(releaseDocs).toContain("AUR");
     expect(releaseDocs).toContain("Snap");
-    expect(readme).toContain("Fedora-install-smoke-tests");
+    expect(readme).toContain("Fedora-install-and-headless-launch-smoke-tests");
 
     for (const target of [
       "Windows 10 x64",
@@ -127,6 +130,7 @@ describe("shipped JSON config", () => {
     expect(validationMatrix).toContain("CI or VM checks");
     expect(validationMatrix).toContain("physical-device validation");
     expect(validationMatrix).toContain("Fedora container RPM inspection");
+    expect(validationMatrix).toContain("Xvfb headless launch smoke");
     expect(validationMatrix).toContain("Flatpak, AUR, and Snap are not first-party release channels yet");
   });
 });

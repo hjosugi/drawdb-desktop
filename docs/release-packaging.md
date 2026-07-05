@@ -24,13 +24,14 @@ metadata in `overlay/src-tauri/tauri.conf.json`, including runtime dependencies
 for WebKitGTK, GTK, AppIndicator, and librsvg. The Linux x64 RPM is a first-party
 artifact and the release workflow downloads the `ubuntu-22.04` x64 artifact after
 the build matrix, inspects the `.rpm`, installs it with `dnf` in a Fedora
-container, verifies the installed package and binary, and removes it.
+container, verifies the installed package and binary, runs a bounded Xvfb launch
+smoke test, and removes it.
 
 ## Linux distribution policy
 
 | Channel | Policy |
 | --- | --- |
-| RPM | Supported as a first-party GitHub Release artifact. CI Fedora-install-smoke-tests the Linux x64 RPM with `dnf`; maintainers should still launch the app during manual Fedora release validation. |
+| RPM | Supported as a first-party GitHub Release artifact. CI Fedora-install-and-headless-launch-smoke-tests the Linux x64 RPM with `dnf`, D-Bus, and Xvfb; maintainers should still complete the full desktop feature matrix during manual Fedora release validation. |
 | Flatpak | Deferred. A Flathub submission should wait until the desktop patches are merged into a maintained app repo and a runtime sandbox review is done. |
 | AUR | Deferred. A PKGBUILD can wrap the GitHub Release artifacts after release asset names stabilize. |
 | Snap | Deferred. Snap publication requires store credentials and confinement review; use AppImage/RPM/DEB until there is user demand. |

@@ -2,8 +2,8 @@ name: Release (cross-platform build)
 
 # Builds native installers for Windows, macOS (Intel + Apple Silicon) and Linux,
 # including Linux RPM and ARM64 bundles where GitHub-hosted runners are available.
-# The Linux x64 RPM artifact is install-smoke-tested in Fedora after the build
-# matrix finishes.
+# The Linux x64 RPM artifact is installed, headless-launch-smoke-tested, and
+# removed in Fedora after the build matrix finishes.
 #
 # How it works: this repo holds the *overlay* (new modules + Tauri config). The
 # job clones the base drawDB-App, lays the overlay on top, generates icons,
@@ -140,7 +140,7 @@ jobs:
           name: drawdb-ubuntu-22.04-x64
           path: rpm-artifact
 
-      - name: Install and remove RPM in Fedora
+      - name: Install, launch-smoke-test, and remove RPM in Fedora
         shell: bash
         run: |
           set -euo pipefail
@@ -175,7 +175,7 @@ jobs:
               package_name="$(rpm -qp --queryformat "%{NAME}\n" "${RPM_PATH}")"
               package_name_lower="$(printf "%s" "${package_name}" | tr "[:upper:]" "[:lower:]")"
 
-              dnf install -y "${RPM_PATH}"
+              dnf install -y dbus-daemon xorg-x11-server-Xvfb "${RPM_PATH}"
               rpm -q "${package_name}"
 
               mapfile -t installed_files < <(rpm -ql "${package_name}")
@@ -210,6 +210,28 @@ jobs:
 
               echo "Installed binary: ${binary_path}"
               command -v "$(basename "${binary_path}")"
+
+              echo "::group::Headless launch smoke"
+              Xvfb :99 -screen 0 1280x720x24 >/tmp/drawdb-xvfb.log 2>&1 &
+              xvfb_pid=$!
+              trap "kill ${xvfb_pid} 2>/dev/null || true" EXIT
+              sleep 2
+
+              set +e
+              timeout 20s \
+                dbus-run-session -- \
+                env DISPLAY=:99 GDK_BACKEND=x11 WEBKIT_DISABLE_COMPOSITING_MODE=1 \
+                "${binary_path}" >/tmp/drawdb-launch.log 2>&1
+              launch_status=$?
+              set -e
+
+              cat /tmp/drawdb-launch.log
+              if [[ "${launch_status}" -ne 0 && "${launch_status}" -ne 124 ]]; then
+                echo "Headless launch failed with exit ${launch_status}."
+                cat /tmp/drawdb-xvfb.log
+                exit "${launch_status}"
+              fi
+              echo "::endgroup::"
 
               dnf remove -y "${package_name}"
               if rpm -q "${package_name}"; then

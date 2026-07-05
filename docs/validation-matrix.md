@@ -17,7 +17,7 @@ hosted-runner builds as physical-device validation.
 | Ubuntu 22.04 x64 | `.deb`, `.rpm`, `.AppImage` | Build artifacts from `ubuntu-22.04` | Pending VM or physical install, launch, feature, and uninstall checks | Ubuntu 22.04 is the Linux glibc baseline. |
 | Ubuntu 22.04 ARM64 | `.deb`, `.rpm`, `.AppImage` | Build artifacts from `ubuntu-22.04-arm` | Pending ARM VM or physical install, launch, feature, and uninstall checks | No hosted install smoke test is claimed. |
 | Ubuntu 24.04 x64 | `.deb`, `.AppImage` from the Ubuntu 22.04 x64 build | No separate build; compatibility is expected from the 22.04 baseline | Pending VM or physical install, launch, feature, and uninstall checks | Record any dependency gap before release. |
-| Fedora latest x64 | `.rpm` from the Ubuntu 22.04 x64 build | Fedora container RPM inspection, `dnf install`, package and binary presence check, and `dnf remove` | Pending desktop launch and full feature checks on a VM or physical Fedora install | The CI smoke test covers packaging/installability, not GUI runtime behavior. |
+| Fedora latest x64 | `.rpm` from the Ubuntu 22.04 x64 build | Fedora container RPM inspection, `dnf install`, package and binary presence check, Xvfb headless launch smoke, and `dnf remove` | Pending full desktop feature checks on a VM or physical Fedora install | The CI smoke test covers package installability and startup, not the full GUI feature matrix. |
 
 ## Manual checklist
 
