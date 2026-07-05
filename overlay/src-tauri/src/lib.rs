@@ -106,13 +106,23 @@ pub fn run() {
     let mut builder = tauri::Builder::default();
     #[cfg(desktop)]
     {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            if let Some(p) = extract_file_arg(&argv) {
-                queue_open_file(app, p);
-            } else {
-                show_main_window(app);
-            }
-        }));
+        builder = builder
+            .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+                if let Some(p) = extract_file_arg(&argv) {
+                    queue_open_file(app, p);
+                } else {
+                    show_main_window(app);
+                }
+            }))
+            .plugin(
+                tauri_plugin_window_state::Builder::default()
+                    .with_state_flags(
+                        tauri_plugin_window_state::StateFlags::SIZE
+                            | tauri_plugin_window_state::StateFlags::POSITION
+                            | tauri_plugin_window_state::StateFlags::MAXIMIZED,
+                    )
+                    .build(),
+            );
     }
     builder
         .manage(OpenFileQueue::default())

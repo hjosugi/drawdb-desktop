@@ -38,7 +38,8 @@
       "@tauri-apps/plugin-fs@2.4.3",
       "@tauri-apps/plugin-dialog@2.4.0",
       "@tauri-apps/plugin-sql@2.3.0",
-      "@tauri-apps/plugin-opener@2.5.4"
+      "@tauri-apps/plugin-opener@2.5.4",
+      "@tauri-apps/plugin-window-state@2.4.1"
     ],
     "cargoPackages": [
       {
@@ -59,6 +60,9 @@
       },
       {
         "name": "tauri-plugin-opener"
+      },
+      {
+        "name": "tauri-plugin-window-state"
       }
     ]
   }

@@ -37,6 +37,7 @@ describe("shipped JSON config", () => {
       "jszip",
       "exceljs",
       "@tauri-apps/plugin-opener@2.5.4",
+      "@tauri-apps/plugin-window-state@2.4.1",
     ]));
     expect(setup.cargoPackages.map((pkg) => pkg.name)).toEqual(expect.arrayContaining([
       "tauri-plugin-fs",
@@ -44,6 +45,7 @@ describe("shipped JSON config", () => {
       "tauri-plugin-single-instance",
       "tauri-plugin-sql",
       "tauri-plugin-opener",
+      "tauri-plugin-window-state",
     ]));
     expect(pkg.scripts.setup).toBe("node scripts/setup.mjs");
     expect(pkg.scripts.cli).toBe("node scripts/drawdb-cli.mjs");
@@ -122,6 +124,20 @@ describe("shipped JSON config", () => {
     expect(lib).not.toContain("Duration::from_millis(700)");
     expect(listenIndex).toBeGreaterThanOrEqual(0);
     expect(readyIndex).toBeGreaterThan(listenIndex);
+  });
+
+  it("enables Tauri window state persistence for desktop builds", () => {
+    const cargoToml = readFileSync("overlay/src-tauri/Cargo.toml", "utf8");
+    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+    const lib = readFileSync("overlay/src-tauri/src/lib.rs", "utf8");
+
+    expect(cargoToml).toContain("tauri-plugin-window-state = \"2\"");
+    expect(cargoToml).toContain("[target.'cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))'.dependencies]");
+    expect(capabilities.permissions).toEqual(expect.arrayContaining(["window-state:default"]));
+    expect(lib).toContain("tauri_plugin_window_state::Builder::default()");
+    expect(lib).toContain("tauri_plugin_window_state::StateFlags::SIZE");
+    expect(lib).toContain("tauri_plugin_window_state::StateFlags::POSITION");
+    expect(lib).toContain("tauri_plugin_window_state::StateFlags::MAXIMIZED");
   });
 
   it("requests every first-party release bundle, including rpm", () => {

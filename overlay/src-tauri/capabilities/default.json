@@ -25,6 +25,7 @@
     "opener:default",
     "opener:allow-open-path",
     "opener:allow-reveal-item-in-dir",
+    "window-state:default",
     {
       "identifier": "fs:scope",
       "allow": [
