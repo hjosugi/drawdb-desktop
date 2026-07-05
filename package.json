@@ -8,16 +8,20 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "setup:dry-run": "node scripts/setup.mjs --dry-run",
-    "test": "node tests/validate-config.mjs && node tests/i18n.smoke.mjs && node tests/smoke.mjs && node tests/excel.smoke.mjs",
-    "test:config": "node tests/validate-config.mjs",
-    "test:i18n": "node tests/i18n.smoke.mjs",
-    "test:sql": "node tests/smoke.mjs",
-    "test:excel": "node tests/excel.smoke.mjs",
+    "test": "vitest run --coverage",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:config": "vitest run tests/config.test.mjs",
+    "test:i18n": "vitest run tests/i18n.test.mjs",
+    "test:sql": "vitest run tests/sql.test.mjs tests/import-sql.test.mjs tests/import-sql-common.test.mjs tests/export-sql.edge.test.mjs tests/export-sql.snap.test.mjs",
+    "test:excel": "vitest run tests/excel.test.mjs",
     "icons": "python3 scripts/generate_icons.py"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.9",
     "exceljs": "^4.4.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "vitest": "^4.1.9"
   },
   "drawdbDesktopSetup": {
     "projectName": "drawDB-Desktop",

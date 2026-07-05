@@ -2,25 +2,35 @@
 // Handles: CREATE TYPE ... AS ENUM, CREATE TABLE (with SERIAL/NUMERIC/BYTEA/JSONB/
 // multi-word types), inline + table-level PRIMARY KEY/UNIQUE, COMMENT ON TABLE/COLUMN,
 // CREATE [UNIQUE] INDEX, ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY ... [ON DELETE/UPDATE].
-const RE_CREATE_ENUM  = /CREATE\s+TYPE\s+([\w.""]+)\s+AS\s+ENUM\s*\(([^)]*)\)\s*;/gi;
-const RE_CREATE_TABLE = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.""]+)\s*\(([\s\S]*?)\)\s*;/gi;
-const RE_COMMENT_TBL  = /COMMENT\s+ON\s+TABLE\s+([\w.""]+)\s+IS\s+'((?:[^']|'')*)'\s*;/gi;
-const RE_COMMENT_COL  = /COMMENT\s+ON\s+COLUMN\s+([\w.""]+)\.([\w""]+)\s+IS\s+'((?:[^']|'')*)'\s*;/gi;
-const RE_CREATE_INDEX = /CREATE\s+(UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.""]+)\s+ON\s+([\w.""]+)\s*(?:USING\s+\w+\s*)?\(([^)]+)\)\s*;/gi;
-const RE_ALTER_FK     = /ALTER\s+TABLE\s+([\w.""]+)\s+ADD\s+CONSTRAINT\s+([\w.""]+)\s+FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+([\w.""]+)\s*\(([^)]+)\)(?:\s+ON\s+DELETE\s+([A-Z\s]+?))?(?:\s+ON\s+UPDATE\s+([A-Z\s]+?))?\s*;/gi;
+import { normalizeConstraintAction, stripSqlComments } from "./common.js";
 
-const unquote = (s) =>
-  String(s).replace(/^"|"$/g, "").replace(/""/g, '"').replace(/^.*\./, "");
+const PG_IDENT = String.raw`(?:"(?:[^"]|"")+"|[\w]+)`;
+const PG_QUAL_IDENT = String.raw`(?:(?:"(?:[^"]|"")+"|[\w]+)\.)?(?:"(?:[^"]|"")+"|[\w]+)`;
+const RE_CREATE_ENUM = new RegExp(`CREATE\\s+TYPE\\s+(${PG_QUAL_IDENT})\\s+AS\\s+ENUM\\s*\\(([^)]*)\\)\\s*;`, "gi");
+const RE_CREATE_TABLE = new RegExp(`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(${PG_QUAL_IDENT})\\s*\\(([\\s\\S]*?)\\)\\s*;`, "gi");
+const RE_COMMENT_TBL = new RegExp(`COMMENT\\s+ON\\s+TABLE\\s+(${PG_QUAL_IDENT})\\s+IS\\s+'((?:[^']|'')*)'\\s*;`, "gi");
+const RE_COMMENT_COL = new RegExp(`COMMENT\\s+ON\\s+COLUMN\\s+(${PG_QUAL_IDENT})\\.(${PG_IDENT})\\s+IS\\s+'((?:[^']|'')*)'\\s*;`, "gi");
+const RE_CREATE_INDEX = new RegExp(`CREATE\\s+(UNIQUE\\s+)?INDEX\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(${PG_QUAL_IDENT})\\s+ON\\s+(${PG_QUAL_IDENT})\\s*(?:USING\\s+\\w+\\s*)?\\(([^)]+)\\)\\s*;`, "gi");
+const RE_ALTER_FK = new RegExp(`ALTER\\s+TABLE\\s+(${PG_QUAL_IDENT})\\s+ADD\\s+CONSTRAINT\\s+(${PG_IDENT})\\s+FOREIGN\\s+KEY\\s*\\(([^)]+)\\)\\s+REFERENCES\\s+(${PG_QUAL_IDENT})\\s*\\(([^)]+)\\)(?:\\s+ON\\s+DELETE\\s+([A-Z\\s]+?))?(?:\\s+ON\\s+UPDATE\\s+([A-Z\\s]+?))?\\s*;`, "gi");
+const RE_TABLE_FK = new RegExp(`^(?:CONSTRAINT\\s+(${PG_IDENT})\\s+)?FOREIGN\\s+KEY\\s*\\(([^)]+)\\)\\s+REFERENCES\\s+(${PG_QUAL_IDENT})\\s*\\(([^)]+)\\)`, "i");
+const RE_INLINE_FK = new RegExp(`\\bREFERENCES\\s+(${PG_QUAL_IDENT})\\s*\\(([^)]+)\\)`, "i");
+
+const unquote = (s) => {
+  const last = String(s).trim().split(".").pop() || "";
+  return last.replace(/^"|"$/g, "").replace(/""/g, '"');
+};
 
 export function fromPostgres(sql) {
+  const source = stripSqlComments(sql);
   const tables = [];
   const relationships = [];
+  const pendingFks = [];
   const tableMap = new Map();
   const enumMap = new Map(); // lower(name) -> [values]
   let m, id = 0;
 
   RE_CREATE_ENUM.lastIndex = 0;
-  while ((m = RE_CREATE_ENUM.exec(sql)) !== null) {
+  while ((m = RE_CREATE_ENUM.exec(source)) !== null) {
     const name = unquote(m[1]).toLowerCase();
     const values = m[2]
       .split(",")
@@ -30,20 +40,20 @@ export function fromPostgres(sql) {
   }
 
   RE_CREATE_TABLE.lastIndex = 0;
-  while ((m = RE_CREATE_TABLE.exec(sql)) !== null) {
+  while ((m = RE_CREATE_TABLE.exec(source)) !== null) {
     const name = unquote(m[1]);
-    const t = parseTableBody(name, m[2], id++, enumMap);
+    const t = parseTableBody(name, m[2], id++, enumMap, pendingFks);
     tables.push(t);
     tableMap.set(name.toLowerCase(), t);
   }
 
   RE_COMMENT_TBL.lastIndex = 0;
-  while ((m = RE_COMMENT_TBL.exec(sql)) !== null) {
+  while ((m = RE_COMMENT_TBL.exec(source)) !== null) {
     const t = tableMap.get(unquote(m[1]).toLowerCase());
     if (t) t.comment = m[2].replace(/''/g, "'");
   }
   RE_COMMENT_COL.lastIndex = 0;
-  while ((m = RE_COMMENT_COL.exec(sql)) !== null) {
+  while ((m = RE_COMMENT_COL.exec(source)) !== null) {
     const t = tableMap.get(unquote(m[1]).toLowerCase());
     if (!t) continue;
     const colName = unquote(m[2]);
@@ -51,7 +61,7 @@ export function fromPostgres(sql) {
     if (f) f.comment = m[3].replace(/''/g, "'");
   }
   RE_CREATE_INDEX.lastIndex = 0;
-  while ((m = RE_CREATE_INDEX.exec(sql)) !== null) {
+  while ((m = RE_CREATE_INDEX.exec(source)) !== null) {
     const t = tableMap.get(unquote(m[3]).toLowerCase());
     if (!t) continue;
     t.indices = t.indices || [];
@@ -62,30 +72,24 @@ export function fromPostgres(sql) {
       unique: !!m[1],
     });
   }
+  pendingFks.forEach((fk) => addRelationship(relationships, tableMap, fk));
   RE_ALTER_FK.lastIndex = 0;
-  while ((m = RE_ALTER_FK.exec(sql)) !== null) {
-    const sT = tableMap.get(unquote(m[1]).toLowerCase());
-    const eT = tableMap.get(unquote(m[4]).toLowerCase());
-    if (!sT || !eT) continue;
-    const sCols = m[3].split(",").map((s) => unquote(s.trim()));
-    const eCols = m[5].split(",").map((s) => unquote(s.trim()));
-    relationships.push({
-      id: relationships.length,
+  while ((m = RE_ALTER_FK.exec(source)) !== null) {
+    addRelationship(relationships, tableMap, {
       name: unquote(m[2]),
-      startTableId: sT.id,
-      startFieldId: sT.fields.findIndex((f) => f.name === sCols[0]),
-      endTableId: eT.id,
-      endFieldId: eT.fields.findIndex((f) => f.name === eCols[0]),
-      cardinality: "one_to_many",
-      updateConstraint: m[7] ? m[7].trim().toUpperCase().replace(/\s+/g, " ") : "NO ACTION",
-      deleteConstraint: m[6] ? m[6].trim().toUpperCase().replace(/\s+/g, " ") : "NO ACTION",
+      sourceTable: unquote(m[1]),
+      sourceCols: splitCols(m[3]),
+      targetTable: unquote(m[4]),
+      targetCols: splitCols(m[5]),
+      updateConstraint: normalizeConstraintAction(m[7]),
+      deleteConstraint: normalizeConstraintAction(m[6]),
     });
   }
 
   return { tables, relationships };
 }
 
-function parseTableBody(name, body, id, enumMap) {
+function parseTableBody(name, body, id, enumMap, pendingFks) {
   const fields = [];
   const pkCols = [];
   const lines = splitTopLevel(body);
@@ -93,13 +97,25 @@ function parseTableBody(name, body, id, enumMap) {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
+    const fk = line.match(RE_TABLE_FK);
+    if (fk) {
+      pendingFks.push({
+        name: fk[1] ? unquote(fk[1]) : `fk_${name}_${pendingFks.length + 1}`,
+        sourceTable: name,
+        sourceCols: splitCols(fk[2]),
+        targetTable: unquote(fk[3]),
+        targetCols: splitCols(fk[4]),
+        ...constraintActions(line),
+      });
+      continue;
+    }
     if (/^CONSTRAINT\s+/i.test(line) || /^PRIMARY\s+KEY\s*\(/i.test(line) ||
-        /^UNIQUE\s*\(/i.test(line) || /^FOREIGN\s+KEY\b/i.test(line) || /^CHECK\s*\(/i.test(line)) {
+        /^UNIQUE\s*\(/i.test(line) || /^CHECK\s*\(/i.test(line)) {
       const pk = line.match(/PRIMARY\s+KEY\s*\(([^)]+)\)/i);
       if (pk) pk[1].split(",").forEach((c) => pkCols.push(unquote(c.trim())));
       continue;
     }
-    const colM = line.match(/^("[^"]+"|[A-Za-z_][\w$]*)\s+([\s\S]+)$/);
+    const colM = line.match(new RegExp(`^(${PG_IDENT})\\s+([\\s\\S]+)$`));
     if (!colM) continue;
     const colName = unquote(colM[1]);
     const rest = colM[2];
@@ -111,6 +127,17 @@ function parseTableBody(name, body, id, enumMap) {
     const unique = /\bUNIQUE\b/.test(upper) && !isPK;
     const defM = rest.match(/DEFAULT\s+('(?:[^']|'')*'|[^\s,]+)/i);
     const def = defM ? stripDefault(defM[1]) : "";
+    const inlineFk = rest.match(RE_INLINE_FK);
+    if (inlineFk) {
+      pendingFks.push({
+        name: `fk_${name}_${colName}`,
+        sourceTable: name,
+        sourceCols: [colName],
+        targetTable: unquote(inlineFk[1]),
+        targetCols: splitCols(inlineFk[2]),
+        ...constraintActions(rest),
+      });
+    }
     fields.push({
       id: fIdx++, name: colName, type: norm.type, size: norm.size || "",
       notNull, primary: isPK, unique, increment: !!norm.increment,
@@ -144,7 +171,7 @@ function extractType(rest) {
       return { raw: canon, size: after ? after[1].trim() : "" };
     }
   }
-  const m = rest.match(/^("[^"]+"|[A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?/);
+  const m = rest.match(new RegExp(`^(${PG_IDENT})\\s*(?:\\(([^)]*)\\))?`));
   if (!m) return { raw: "VARCHAR", size: "" };
   return { raw: unquote(m[1]), size: m[2] ? m[2].trim() : "" };
 }
@@ -178,6 +205,39 @@ function normalizeType(raw, size, enumMap) {
     case "UUID": return { type: "UUID", size: "" };
     default: return { type: u, size };
   }
+}
+
+function addRelationship(relationships, tableMap, fk) {
+  const sT = tableMap.get(fk.sourceTable.toLowerCase());
+  const eT = tableMap.get(fk.targetTable.toLowerCase());
+  if (!sT || !eT) return;
+  const startFieldId = sT.fields.findIndex((f) => f.name === fk.sourceCols[0]);
+  const endFieldId = eT.fields.findIndex((f) => f.name === fk.targetCols[0]);
+  if (startFieldId < 0 || endFieldId < 0) return;
+  relationships.push({
+    id: relationships.length,
+    name: fk.name,
+    startTableId: sT.id,
+    startFieldId,
+    endTableId: eT.id,
+    endFieldId,
+    cardinality: "one_to_many",
+    updateConstraint: fk.updateConstraint,
+    deleteConstraint: fk.deleteConstraint,
+  });
+}
+
+function splitCols(cols) {
+  return cols.split(",").map((s) => unquote(s.trim()));
+}
+
+function constraintActions(text) {
+  const del = text.match(/\bON\s+DELETE\s+(CASCADE|SET\s+NULL|RESTRICT|NO\s+ACTION|SET\s+DEFAULT)/i);
+  const upd = text.match(/\bON\s+UPDATE\s+(CASCADE|SET\s+NULL|RESTRICT|NO\s+ACTION|SET\s+DEFAULT)/i);
+  return {
+    deleteConstraint: normalizeConstraintAction(del?.[1]),
+    updateConstraint: normalizeConstraintAction(upd?.[1]),
+  };
 }
 
 function splitTopLevel(body) {

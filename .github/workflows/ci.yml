@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: Lint configs + smoke tests
+    name: Vitest + coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,17 +16,30 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dev dependencies (exceljs)
+      - name: Install dev dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Validate Tauri JSON configs
-        run: npm run test:config
+      - name: Run Vitest coverage suite
+        run: npm test
 
-      - name: SQL dialect smoke tests (Oracle / MySQL / PostgreSQL)
-        run: npm run test:sql
-
-      - name: Excel I/O smoke test (exceljs round-trip)
-        run: npm run test:excel
+      - name: Add coverage summary
+        if: always()
+        run: |
+          if [ ! -f coverage/coverage-summary.json ]; then
+            exit 0
+          fi
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require("node:fs");
+          const summary = JSON.parse(fs.readFileSync("coverage/coverage-summary.json", "utf8")).total;
+          const rows = ["lines", "statements", "functions", "branches"]
+            .map((key) => `| ${key} | ${summary[key].pct}% | ${summary[key].covered}/${summary[key].total} |`)
+            .join("\n");
+          console.log("## Coverage");
+          console.log("");
+          console.log("| Metric | Percent | Covered |");
+          console.log("| --- | ---: | ---: |");
+          console.log(rows);
+          NODE
 
   icons:
     name: Icon generator runs
