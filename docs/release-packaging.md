@@ -35,6 +35,21 @@ The policy favors clean Windows 10 installability over smaller downloads:
   runtime security updates remain managed by Microsoft; the project does not
   pin a fixed WebView2 runtime version.
 
+## Desktop security policy
+
+The Tauri desktop shell ships with an explicit CSP in
+`overlay/src-tauri/tauri.conf.json`; it must not be set to `null`. The policy is
+intentionally local-first: scripts are app-local, styles allow inline CSS for
+the existing UI, images allow local/data/blob/asset URLs, IPC is limited to the
+Tauri IPC endpoints, and `object-src`, `base-uri`, and `frame-ancestors` are
+disabled.
+
+The default capability file is limited to dialog/open/save, local filesystem
+operations needed for user-selected diagrams and local history, opener reveal,
+and the SQLite plugin. Filesystem scope should stay within user document,
+desktop, downloads, `~/drawDB`, and app config/data locations unless a release
+issue documents why a broader path is required.
+
 Linux builds stay on Ubuntu 22.04 as the glibc baseline for compatibility with
 older supported distributions. The RPM bundle uses the Tauri `bundle.linux.rpm`
 metadata in `overlay/src-tauri/tauri.conf.json`, including runtime dependencies

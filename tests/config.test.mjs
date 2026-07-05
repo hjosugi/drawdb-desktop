@@ -10,6 +10,19 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function cspDirectives(csp) {
+  return Object.fromEntries(
+    csp
+      .split(";")
+      .map((directive) => directive.trim())
+      .filter(Boolean)
+      .map((directive) => {
+        const [name, ...values] = directive.split(/\s+/);
+        return [name, values];
+      }),
+  );
+}
+
 describe("shipped JSON config", () => {
   it.each(jsonFiles)("%s parses", (path) => {
     expect(() => readJson(path)).not.toThrow();
@@ -50,6 +63,49 @@ describe("shipped JSON config", () => {
       "opener:allow-open-path",
     ]));
     expect(scope.allow.map((entry) => entry.path)).toEqual(expect.arrayContaining(["$APPDATA/**"]));
+  });
+
+  it("ships a restrictive Tauri content security policy", () => {
+    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const csp = config.app.security.csp;
+    const directives = cspDirectives(csp);
+
+    expect(typeof csp).toBe("string");
+    expect(csp).not.toContain("*");
+    expect(csp).not.toContain("'unsafe-eval'");
+    expect(directives["default-src"]).toEqual(["'self'"]);
+    expect(directives["script-src"]).toEqual(["'self'"]);
+    expect(directives["style-src"]).toEqual(["'self'", "'unsafe-inline'"]);
+    expect(directives["img-src"]).toEqual(expect.arrayContaining(["'self'", "data:", "blob:", "asset:", "https://asset.localhost"]));
+    expect(directives["font-src"]).toEqual(["'self'", "data:"]);
+    expect(directives["connect-src"]).toEqual(expect.arrayContaining(["'self'", "ipc:", "http://ipc.localhost", "https://ipc.localhost"]));
+    expect(directives["object-src"]).toEqual(["'none'"]);
+    expect(directives["base-uri"]).toEqual(["'none'"]);
+    expect(directives["frame-ancestors"]).toEqual(["'none'"]);
+  });
+
+  it("keeps desktop capabilities scoped to app and user-chosen file locations", () => {
+    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+    const permissions = capabilities.permissions;
+    const scope = permissions.find((permission) => permission.identifier === "fs:scope");
+    const scopedPaths = scope.allow.map((entry) => entry.path).sort();
+
+    expect(permissions).not.toEqual(expect.arrayContaining([
+      "shell:default",
+      "shell:allow-execute",
+      "fs:allow-create",
+      "fs:allow-copy-file",
+      "fs:allow-rename",
+    ]));
+    expect(scopedPaths).toEqual([
+      "$APPCONFIG/**",
+      "$APPDATA/**",
+      "$DESKTOP/**",
+      "$DOCUMENT/**",
+      "$DOWNLOAD/**",
+      "$HOME/drawDB/**",
+    ]);
+    expect(scopedPaths).not.toEqual(expect.arrayContaining(["/**", "**", "$HOME/**", "$ROOT/**"]));
   });
 
   it("requests every first-party release bundle, including rpm", () => {
