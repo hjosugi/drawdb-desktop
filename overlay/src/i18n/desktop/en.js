@@ -17,8 +17,14 @@ export default Object.freeze({
   "menu.exportSqlPostgres": "Export SQL PostgreSQL...",
   "menu.exportPack": "Export Project (.ddbpack)...",
   "menu.importPack": "Import Project (.ddbpack)...",
+  "menu.history": "Local History...",
   "menu.languageEnglish": "Language: English",
   "menu.languageJapanese": "Language: Japanese",
+
+  "history.title": "Local History",
+  "history.close": "Close",
+  "history.empty": "No snapshot selected.",
+  "history.restore": "Restore This Version",
 
   "error.invalidDdbPack": "Invalid .ddbpack format",
   "error.missingDdbPackManifest": "manifest.json not found in .ddbpack",

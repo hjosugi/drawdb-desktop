@@ -45,16 +45,37 @@ export async function readBinaryFile(p)    { const { readFile } = await fs(); re
 export async function writeBinaryFile(p,b) { const { writeFile } = await fs(); return writeFile(p, b); }
 export async function fileExists(path)     { const { exists } = await fs(); return exists(path); }
 
-export function serializeDdb(d) {
-  return JSON.stringify({
+export function normalizeDdbPayload(d, now = new Date()) {
+  return {
     $format: "drawdb-file", $version: 1,
     diagramId: d.diagramId, name: d.name, database: d.database,
-    lastModified: new Date().toISOString(),
+    lastModified: now instanceof Date ? now.toISOString() : String(now),
     tables: d.tables ?? [], relationships: d.relationships ?? [],
     notes: d.notes ?? [], areas: d.areas ?? [],
     types: d.types ?? [], enums: d.enums ?? [],
     transform: d.transform ?? { zoom: 1, pan: { x: 0, y: 0 } },
-  }, null, 2);
+  };
+}
+
+export function stableJsonValue(value) {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(stableJsonValue);
+  if (!value || typeof value !== "object") return value;
+
+  return Object.keys(value).sort().reduce((acc, key) => {
+    if (value[key] !== undefined) acc[key] = stableJsonValue(value[key]);
+    return acc;
+  }, {});
+}
+
+export function stableStringify(value, space = 2) {
+  return JSON.stringify(stableJsonValue(value), null, space);
+}
+
+export function serializeDdb(d, { pretty = true, stable = true, now = new Date() } = {}) {
+  const payload = normalizeDdbPayload(d, now);
+  const space = pretty ? 2 : 0;
+  return stable ? stableStringify(payload, space) : JSON.stringify(payload, null, space);
 }
 export function parseDdb(text) {
   const o = JSON.parse(text);

@@ -9,13 +9,32 @@ import {
   desktopAvailable, writeTextFile, readTextFile, onOpenFile,
   serializeDdb, parseDdb, makeAutoSaver,
 } from "../utils/desktopIO";
+import {
+  createHistorySnapshot,
+  readHistorySettings,
+  shouldCreateTimedSnapshot,
+} from "../utils/history";
 import { importFromPack } from "../utils/ddbpack";
 import { importExcelToDiagram } from "../utils/excelIO";
 
 const { path: filePath, kind: fileKind, setFile } = useContext(FilePathContext);
+const lastHistorySnapshotAt = useRef(null);
+
+async function snapshotLocalHistory(diagram, reason) {
+  if (!filePath || fileKind !== "ddb") return;
+  const entry = await createHistorySnapshot(diagram, {
+    sourcePath: filePath,
+    reason,
+    settings: readHistorySettings(),
+  });
+  if (entry) lastHistorySnapshotAt.current = entry.createdAt;
+}
 
 const fileSaver = useRef(makeAutoSaver(async (payload) => {
   if (!filePath || fileKind !== "ddb") return;
+  if (shouldCreateTimedSnapshot(lastHistorySnapshotAt.current, new Date(), readHistorySettings())) {
+    await snapshotLocalHistory(payload, "autosave");
+  }
   await writeTextFile(filePath, serializeDdb(payload));
 }, 800));
 
@@ -79,7 +98,12 @@ import { fromOracle } from "../../data/importSQL/oracle";
 import { fromMySQL } from "../../data/importSQL/mysqlEnhanced";
 import { fromPostgres } from "../../data/importSQL/postgres";
 import { FilePathContext } from "../../context/FilePathContext";
+import HistoryBrowser from "../../components/HistoryBrowser";
+import { useState } from "react";
 import { setLocale, t } from "../../i18n/index.js";
+import { createHistorySnapshot, readHistorySettings } from "../../utils/history";
+
+const [historyOpen, setHistoryOpen] = useState(false);
 
 async function openDdb() {
   const p = await pickOpen("ddb"); if (!p) return;
@@ -95,15 +119,42 @@ async function openDdb() {
   filePathCtx.setFile(p);
 }
 async function saveDdb() {
-  if (filePathCtx.path && filePathCtx.kind === "ddb")
+  if (filePathCtx.path && filePathCtx.kind === "ddb") {
+    await createHistorySnapshot(currentDiagram, {
+      sourcePath: filePathCtx.path,
+      reason: "save",
+      settings: readHistorySettings(),
+    });
     await writeTextFile(filePathCtx.path, serializeDdb(currentDiagram));
-  else await saveAsDdb();
+  } else await saveAsDdb();
 }
 async function saveAsDdb() {
   const p = await pickSave(`${currentDiagram.name || "diagram"}.ddb`, "ddb");
   if (!p) return;
+  await createHistorySnapshot(currentDiagram, {
+    sourcePath: p,
+    reason: "save-as",
+    settings: readHistorySettings(),
+  });
   await writeTextFile(p, serializeDdb(currentDiagram));
   filePathCtx.setFile(p);
+}
+async function restoreFromHistory(payload) {
+  if (filePathCtx.path && filePathCtx.kind === "ddb") {
+    await createHistorySnapshot(currentDiagram, {
+      sourcePath: filePathCtx.path,
+      reason: "restore-before",
+      settings: readHistorySettings(),
+    });
+  }
+  const existing = payload.diagramId
+    ? await db.diagrams.where("diagramId").equals(payload.diagramId).first() : null;
+  const row = { ...payload, lastModified: new Date() };
+  const id = existing
+    ? (await db.diagrams.update(existing.id, row), existing.id)
+    : await db.diagrams.add(row);
+  loadDiagram(id);
+  setHistoryOpen(false);
 }
 async function openExcel() {
   const p = await pickOpen("xlsx"); if (!p) return;
@@ -171,7 +222,18 @@ const fileMenuExtras = desktopAvailable() ? {
   [t("menu.exportSqlPostgres")]: { function: () => exportSql(toPostgres, "postgres") },
   [t("menu.exportPack")]: { function: exportPack },
   [t("menu.importPack")]: { function: importPack },
+  [t("menu.history")]: { function: () => setHistoryOpen(true) },
   [t("menu.languageEnglish")]: { function: () => changeLocale("en") },
   [t("menu.languageJapanese")]: { function: () => changeLocale("ja") },
 } : {};
+
+// Render near the workspace/control panel root:
+{historyOpen && (
+  <HistoryBrowser
+    currentDiagram={currentDiagram}
+    sourcePath={filePathCtx.path}
+    onRestore={restoreFromHistory}
+    onClose={() => setHistoryOpen(false)}
+  />
+)}
 ```

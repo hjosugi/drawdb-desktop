@@ -17,8 +17,14 @@ export default Object.freeze({
   "menu.exportSqlPostgres": "PostgreSQL SQLを書き出し...",
   "menu.exportPack": "プロジェクトを書き出し (.ddbpack)...",
   "menu.importPack": "プロジェクトを読み込み (.ddbpack)...",
+  "menu.history": "ローカル履歴...",
   "menu.languageEnglish": "言語: 英語",
   "menu.languageJapanese": "言語: 日本語",
+
+  "history.title": "ローカル履歴",
+  "history.close": "閉じる",
+  "history.empty": "スナップショットが選択されていません。",
+  "history.restore": "この版に戻す",
 
   "error.invalidDdbPack": ".ddbpack形式が正しくありません",
   "error.missingDdbPackManifest": ".ddbpackにmanifest.jsonがありません",
