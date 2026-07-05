@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
-import { buildWorkbook, workbookToDiagram } from "../overlay/src/utils/excelIO.js";
+import { SAMPLE_ROW_LIMIT, buildWorkbook, inferColumnType, workbookToDiagram } from "../overlay/src/utils/excelIO.js";
 import { makeShopDiagram } from "./fixtures/shopDiagram.mjs";
 
 describe("Excel I/O", () => {
@@ -55,5 +55,32 @@ describe("Excel I/O", () => {
     expect(oracle.tables[0].fields[1]).toMatchObject({ type: "NUMBER", size: "4,2" });
     expect(oracle.tables[0].fields[2]).toMatchObject({ type: "NUMBER", size: 1 });
     expect(oracle.tables[0].fields[3]).toMatchObject({ type: "TIMESTAMP" });
+  });
+
+  it("exposes type inference as a pure function", () => {
+    expect(inferColumnType(["1", "2", "300"], "mysql")).toEqual({ type: "SMALLINT", size: "" });
+    expect(inferColumnType(["12.30", "-4.5"], "postgres")).toEqual({ type: "DECIMAL", size: "4,2" });
+    expect(inferColumnType(["true", "false", "1"], "oracle")).toEqual({ type: "NUMBER", size: 1 });
+    expect(inferColumnType(["Ada", 42], "mysql")).toEqual({ type: "VARCHAR", size: 8 });
+    expect(inferColumnType([], "mysql")).toEqual({ type: "VARCHAR", size: 255 });
+  });
+
+  it("limits arbitrary data inference to the first 500 sample rows", () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("sample capped");
+    ws.addRow(["id"]);
+    for (let row = 1; row <= SAMPLE_ROW_LIMIT; row++) {
+      ws.addRow([row]);
+    }
+    ws.addRow(["text outside sample window"]);
+
+    const diagram = workbookToDiagram(wb, { database: "mysql", name: "Imported" });
+
+    expect(diagram.tables[0].fields[0]).toMatchObject({
+      name: "id",
+      type: "SMALLINT",
+      primary: true,
+      notNull: true,
+    });
   });
 });

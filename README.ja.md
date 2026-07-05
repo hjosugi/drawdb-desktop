@@ -45,6 +45,18 @@ npm run setup
 
 セットアップスクリプトはベースの drawDB-App を clone し、`overlay/` をコピーし、`package.json` にまとめた frontend / Rust 依存を導入します。その後 `APPLY_PATCH.md` の手動パッチを適用してください。clone や install を行わずに手順だけ確認する場合は `npm run setup:dry-run` を使います。
 
+## ヘッドレス CLI
+
+デスクトップアプリを起動せずに、CI で `.ddb` の検証や変換を実行できます。詳細は
+[`docs/headless-cli.md`](docs/headless-cli.md) を参照してください。
+
+```sh
+node scripts/drawdb-cli.mjs validate schema.ddb
+node scripts/drawdb-cli.mjs export --to sql --dialect postgres schema.ddb -o schema.sql
+node scripts/drawdb-cli.mjs export --to xlsx schema.ddb -o tables.xlsx
+node scripts/drawdb-cli.mjs import --from sql --dialect mysql schema.sql -o schema.ddb
+```
+
 ## テスト
 
 ```sh

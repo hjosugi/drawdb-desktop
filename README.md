@@ -50,6 +50,18 @@ The compatibility wrappers call the same Node setup script:
 
 The setup script clones the base drawDB-App checkout, copies `overlay/`, installs the frontend and Rust dependencies listed in `package.json`, and leaves the app ready for the manual patch steps in `APPLY_PATCH.md`. Use `npm run setup:dry-run` to validate the setup plan without cloning or installing.
 
+## Headless CLI
+
+Use the CLI for CI-safe `.ddb` validation and conversion without starting the
+desktop app. See [`docs/headless-cli.md`](docs/headless-cli.md) for details.
+
+```sh
+node scripts/drawdb-cli.mjs validate schema.ddb
+node scripts/drawdb-cli.mjs export --to sql --dialect postgres schema.ddb -o schema.sql
+node scripts/drawdb-cli.mjs export --to xlsx schema.ddb -o tables.xlsx
+node scripts/drawdb-cli.mjs import --from sql --dialect mysql schema.sql -o schema.ddb
+```
+
 ## Tests
 
 ```sh

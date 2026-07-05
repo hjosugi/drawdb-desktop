@@ -33,6 +33,8 @@ describe("shipped JSON config", () => {
       "tauri-plugin-opener",
     ]));
     expect(pkg.scripts.setup).toBe("node scripts/setup.mjs");
+    expect(pkg.scripts.cli).toBe("node scripts/drawdb-cli.mjs");
+    expect(pkg.bin.drawdb).toBe("./scripts/drawdb-cli.mjs");
   });
 
   it("grants local-history filesystem and opener permissions", () => {
@@ -100,6 +102,7 @@ describe("shipped JSON config", () => {
   it("documents supported OS and package validation coverage", () => {
     const releaseDocs = readFileSync("docs/release-packaging.md", "utf8");
     const validationMatrix = readFileSync("docs/validation-matrix.md", "utf8");
+    const cliDocs = readFileSync("docs/headless-cli.md", "utf8");
     const readme = readFileSync("README.md", "utf8");
 
     expect(releaseDocs).toContain("first-party");
@@ -107,7 +110,10 @@ describe("shipped JSON config", () => {
     expect(releaseDocs).toContain("Flatpak");
     expect(releaseDocs).toContain("AUR");
     expect(releaseDocs).toContain("Snap");
+    expect(cliDocs).toContain("drawdb export");
+    expect(cliDocs).toContain("validate schema.ddb");
     expect(readme).toContain("Fedora-install-and-headless-launch-smoke-tests");
+    expect(readme).toContain("docs/headless-cli.md");
 
     for (const target of [
       "Windows 10 x64",

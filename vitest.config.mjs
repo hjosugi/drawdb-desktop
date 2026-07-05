@@ -12,7 +12,12 @@ export default defineConfig({
         "overlay/src/data/exportSQL/*.js",
         "overlay/src/data/importSQL/*.js",
         "overlay/src/i18n/**/*.js",
-        "overlay/src/utils/excelIO.js",
+        "overlay/src/utils/ddb.js",
+        "overlay/src/utils/excel/build.js",
+        "overlay/src/utils/excel/constants.js",
+        "overlay/src/utils/excel/helpers.js",
+        "overlay/src/utils/excel/parse.js",
+        "overlay/src/utils/excel/styles.js",
       ],
       thresholds: {
         statements: 70,

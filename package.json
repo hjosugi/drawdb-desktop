@@ -5,9 +5,13 @@
   "type": "module",
   "description": "Desktop overlay for drawDB-App: .ddb/.ddbpack file storage, Excel I/O, and Oracle/MySQL/PostgreSQL SQL dialects for Tauri.",
   "license": "AGPL-3.0",
+  "bin": {
+    "drawdb": "./scripts/drawdb-cli.mjs"
+  },
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "setup:dry-run": "node scripts/setup.mjs --dry-run",
+    "cli": "node scripts/drawdb-cli.mjs",
     "test": "vitest run --coverage",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
