@@ -17,4 +17,4 @@ save() の DB 更新後と useEffect を追加。詳細は PATCHES_FULL.md 参�
 File メニュー拡張 + i18n(EN/JA)対応。詳細は PATCHES_FULL.md 参照。
 
 ## i18n
-`src/i18n` は overlay でコピーされます。既定はブラウザ言語、未対応言語は英語です。
+`src/i18n/index.js` と `src/i18n/desktop/*` は overlay でコピーされます。既定はブラウザ言語、未対応言語は英語です。

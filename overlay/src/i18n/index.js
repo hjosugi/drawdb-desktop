@@ -1,5 +1,5 @@
-import en from "./locales/en.js";
-import ja from "./locales/ja.js";
+import en from "./desktop/en.js";
+import ja from "./desktop/ja.js";
 
 const STORAGE_KEY = "drawdb-desktop.locale";
 

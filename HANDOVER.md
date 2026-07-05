@@ -104,7 +104,7 @@ drawdb-desktop-overlay-v2/
    |  +- src/{main.rs, lib.rs}
    +- src/
       +- context/FilePathContext.jsx
-      +- i18n/{index.js,locales/en.js,locales/ja.js}
+      +- i18n/{index.js,desktop/en.js,desktop/ja.js}
       +- utils/{desktopIO.js, ddbpack.js, excelIO.js}
       +- data/
       |  +- sqlBackend.js
