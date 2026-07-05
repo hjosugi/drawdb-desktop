@@ -69,3 +69,7 @@ node scripts/drawdb-cli.mjs import --from sql --dialect mysql schema.sql -o sche
 ```sh
 npm test
 ```
+
+## License
+
+0BSD. You can use, copy, modify, and distribute this project for almost any purpose.
