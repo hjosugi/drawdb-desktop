@@ -31,10 +31,12 @@
       "nsis",
       "msi",
       "deb",
+      "rpm",
       "appimage",
       "dmg"
     ],
     "category": "DeveloperTool",
+    "license": "AGPL-3.0",
     "shortDescription": "Database schema editor",
     "longDescription": "drawDB - Free and simple database diagram editor and SQL generator",
     "icon": [
@@ -73,6 +75,16 @@
         "displayLanguageSelector": true,
         "installerIcon": "icons/icon.ico",
         "installMode": "currentUser"
+      }
+    },
+    "linux": {
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "gtk3",
+          "libappindicator-gtk3",
+          "librsvg2"
+        ]
       }
     }
   }

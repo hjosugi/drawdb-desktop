@@ -1,6 +1,7 @@
 name: Release (cross-platform build)
 
-# Builds native installers for Windows, macOS (Intel + Apple Silicon) and Linux.
+# Builds native installers for Windows, macOS (Intel + Apple Silicon) and Linux,
+# including Linux RPM and ARM64 bundles where GitHub-hosted runners are available.
 #
 # How it works: this repo holds the *overlay* (new modules + Tauri config). The
 # job clones the base drawDB-App, lays the overlay on top, generates icons,
@@ -36,8 +37,11 @@ jobs:
         include:
           - { os: macos-latest,  rust_target: aarch64-apple-darwin, args: "--target aarch64-apple-darwin" }
           - { os: macos-latest,  rust_target: x86_64-apple-darwin,  args: "--target x86_64-apple-darwin" }
-          - { os: ubuntu-22.04,  rust_target: "",                   args: "" }
-          - { os: windows-latest, rust_target: "",                  args: "" }
+          - { os: ubuntu-22.04,      rust_target: "",                         artifact_suffix: "x64",   args: "" }
+          - { os: ubuntu-22.04-arm,  rust_target: "",                         artifact_suffix: "arm64", args: "" }
+          - { os: windows-latest,    rust_target: "",                         artifact_suffix: "x64",   args: "" }
+          # Windows ARM64 builds only NSIS until WiX/MSI ARM64 output has been verified on a real device.
+          - { os: windows-11-arm,    rust_target: aarch64-pc-windows-msvc,     artifact_suffix: "arm64", args: "--target aarch64-pc-windows-msvc --bundles nsis" }
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -60,12 +64,12 @@ jobs:
           path: app
 
       - name: Install Linux build dependencies
-        if: matrix.os == 'ubuntu-22.04'
+        if: startsWith(matrix.os, 'ubuntu-')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
-            patchelf build-essential libssl-dev file
+            patchelf build-essential libssl-dev file rpm xdg-utils
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -111,7 +115,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: drawdb-${{ matrix.os }}-${{ matrix.rust_target || 'native' }}
+          name: drawdb-${{ matrix.os }}-${{ matrix.artifact_suffix || matrix.rust_target || 'native' }}
           path: |
             app/src-tauri/target/**/release/bundle/**/*.dmg
             app/src-tauri/target/**/release/bundle/**/*.app

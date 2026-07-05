@@ -8,6 +8,20 @@
 
 drawDBをTauriデスクトップ化するoverlayです。ローカルファイル、Excel、SQL、EN/JA i18nに対応します。
 
+## ダウンロード
+
+リリース成果物は GitHub Actions でビルドします。パッケージ方針と手動検証チェックリストは
+[`docs/release-packaging.md`](docs/release-packaging.md) を参照してください。
+
+| Platform | Architectures | Formats |
+| --- | --- | --- |
+| Windows | x64 | NSIS `.exe`, MSI `.msi` |
+| Windows | ARM64 | NSIS `.exe` |
+| macOS | Intel, Apple Silicon | `.dmg`, `.app` |
+| Linux | x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
+
+Flatpak、AUR、Snap の公開は、Release の成果物名が安定し、必要なストア/レジストリ認証情報を用意できるまで延期します。
+
 ## セットアップ
 
 必要なもの: git、Node.js 18+、npm、Rust/Cargo。

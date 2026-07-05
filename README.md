@@ -8,6 +8,22 @@
 
 Tauri overlay for drawDB with local files, Excel, SQL, and EN/JA i18n.
 
+## Downloads
+
+Release artifacts are built by GitHub Actions. See
+[`docs/release-packaging.md`](docs/release-packaging.md) for the packaging
+policy and manual verification checklist.
+
+| Platform | Architectures | Formats |
+| --- | --- | --- |
+| Windows | x64 | NSIS `.exe`, MSI `.msi` |
+| Windows | ARM64 | NSIS `.exe` |
+| macOS | Intel, Apple Silicon | `.dmg`, `.app` |
+| Linux | x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
+
+Flatpak, AUR, and Snap publishing are deferred until release asset names are
+stable and the required store/registry credentials are available.
+
 ## Setup
 
 Requirements: git, Node.js 18+, npm, and Rust/Cargo.
