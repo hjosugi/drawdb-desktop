@@ -6,6 +6,8 @@
   "description": "Desktop overlay for drawDB-App: .ddb/.ddbpack file storage, Excel I/O, and Oracle/MySQL/PostgreSQL SQL dialects for Tauri.",
   "license": "AGPL-3.0",
   "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "setup:dry-run": "node scripts/setup.mjs --dry-run",
     "test": "node tests/validate-config.mjs && node tests/i18n.smoke.mjs && node tests/smoke.mjs && node tests/excel.smoke.mjs",
     "test:config": "node tests/validate-config.mjs",
     "test:i18n": "node tests/i18n.smoke.mjs",
@@ -16,5 +18,36 @@
   "devDependencies": {
     "exceljs": "^4.4.0",
     "jszip": "^3.10.1"
+  },
+  "drawdbDesktopSetup": {
+    "projectName": "drawDB-Desktop",
+    "baseRepo": "https://github.com/khsuzan/drawDB-App.git",
+    "npmPackages": [
+      "jszip",
+      "exceljs",
+      "@tauri-apps/cli@2.9.6",
+      "@tauri-apps/api@2.9.1",
+      "@tauri-apps/plugin-fs@2.4.3",
+      "@tauri-apps/plugin-dialog@2.4.0",
+      "@tauri-apps/plugin-sql@2.3.0"
+    ],
+    "cargoPackages": [
+      {
+        "name": "tauri-plugin-fs"
+      },
+      {
+        "name": "tauri-plugin-dialog"
+      },
+      {
+        "name": "tauri-plugin-single-instance"
+      },
+      {
+        "name": "tauri-plugin-sql",
+        "args": [
+          "--features",
+          "sqlite"
+        ]
+      }
+    ]
   }
 }

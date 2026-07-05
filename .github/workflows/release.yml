@@ -59,12 +59,6 @@ jobs:
           ref: ${{ env.BASE_REF }}
           path: app
 
-      - name: Apply overlay onto base
-        shell: bash
-        run: |
-          cp -R overlay-src/overlay/. app/
-          echo "Overlay applied. Reminder: PATCHES_FULL.md edits are manual."
-
       - name: Install Linux build dependencies
         if: matrix.os == 'ubuntu-22.04'
         run: |
@@ -88,6 +82,9 @@ jobs:
         with:
           workspaces: "./app/src-tauri -> target"
 
+      - name: Apply overlay and install dependencies
+        run: node overlay-src/scripts/setup.mjs --project-dir ../app
+
       - name: Setup Python (icon generation)
         uses: actions/setup-python@v5
         with:
@@ -97,16 +94,6 @@ jobs:
         run: |
           python -m pip install --quiet pillow
           python overlay-src/scripts/generate_icons.py -o app/src-tauri/icons
-
-      - name: Install frontend dependencies
-        working-directory: app
-        shell: bash
-        run: |
-          npm install --no-audit --no-fund
-          npm install --no-audit --no-fund jszip exceljs @tauri-apps/cli@2.9.6 @tauri-apps/api@2.9.1 \
-            @tauri-apps/plugin-fs@2.4.3 @tauri-apps/plugin-dialog@2.4.0 \
-            @tauri-apps/plugin-sql@2.3.0
-          npm pkg set scripts.tauri=tauri
 
       - name: Build app and (on tag) publish release
         uses: tauri-apps/tauri-action@v0

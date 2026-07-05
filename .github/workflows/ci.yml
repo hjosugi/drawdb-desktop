@@ -41,3 +41,28 @@ jobs:
           python -m pip install --quiet pillow
           python scripts/generate_icons.py -o /tmp/icons
           ls -la /tmp/icons
+
+  setup:
+    name: Setup wrapper dry run (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify setup wrapper (Unix)
+        if: runner.os != 'Windows'
+        run: ./setup.sh --dry-run
+
+      - name: Verify setup wrapper (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\setup.ps1 --dry-run
