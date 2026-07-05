@@ -2,6 +2,8 @@ name: Release (cross-platform build)
 
 # Builds native installers for Windows, macOS (Intel + Apple Silicon) and Linux,
 # including Linux RPM and ARM64 bundles where GitHub-hosted runners are available.
+# The Linux x64 RPM artifact is install-smoke-tested in Fedora after the build
+# matrix finishes.
 #
 # How it works: this repo holds the *overlay* (new modules + Tauri config). The
 # job clones the base drawDB-App, lays the overlay on top, generates icons,
@@ -126,3 +128,92 @@ jobs:
             app/src-tauri/target/**/release/bundle/**/*.msi
           if-no-files-found: ignore
           retention-days: 14
+
+  verify-linux-x64-rpm:
+    name: Verify Linux x64 RPM in Fedora
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: drawdb-ubuntu-22.04-x64
+          path: rpm-artifact
+
+      - name: Install and remove RPM in Fedora
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rpm_path="$(find rpm-artifact -type f -name '*.rpm' | sort | head -n 1)"
+          if [[ -z "${rpm_path}" ]]; then
+            echo "No .rpm found in drawdb-ubuntu-22.04-x64."
+            find rpm-artifact -maxdepth 6 -type f -print
+            exit 1
+          fi
+
+          docker run --rm \
+            --volume "${PWD}:/workspace:ro" \
+            --workdir /workspace \
+            --env RPM_PATH="${rpm_path}" \
+            fedora:latest \
+            bash -lc '
+              set -euo pipefail
+
+              echo "::group::RPM package metadata"
+              rpm -qip "${RPM_PATH}"
+              echo "::endgroup::"
+
+              echo "::group::RPM package files"
+              rpm -qlp "${RPM_PATH}"
+              echo "::endgroup::"
+
+              echo "::group::RPM package requirements"
+              rpm -qp --requires "${RPM_PATH}"
+              echo "::endgroup::"
+
+              package_name="$(rpm -qp --queryformat "%{NAME}\n" "${RPM_PATH}")"
+              package_name_lower="$(printf "%s" "${package_name}" | tr "[:upper:]" "[:lower:]")"
+
+              dnf install -y "${RPM_PATH}"
+              rpm -q "${package_name}"
+
+              mapfile -t installed_files < <(rpm -ql "${package_name}")
+              printf "%s\n" "${installed_files[@]}"
+
+              binary_path=""
+              for candidate in \
+                "/usr/bin/${package_name}" \
+                "/usr/bin/${package_name_lower}" \
+                "/usr/bin/drawDB" \
+                "/usr/bin/drawdb"
+              do
+                if [[ -x "${candidate}" ]]; then
+                  binary_path="${candidate}"
+                  break
+                fi
+              done
+
+              if [[ -z "${binary_path}" ]]; then
+                while IFS= read -r candidate; do
+                  if [[ -x "${candidate}" ]]; then
+                    binary_path="${candidate}"
+                    break
+                  fi
+                done < <(printf "%s\n" "${installed_files[@]}" | awk "tolower(\$0) ~ /^\/usr\/bin\/.*drawdb/ || /^\/usr\/bin\//")
+              fi
+
+              if [[ -z "${binary_path}" ]]; then
+                echo "No installed executable was found for ${package_name}."
+                exit 1
+              fi
+
+              echo "Installed binary: ${binary_path}"
+              command -v "$(basename "${binary_path}")"
+
+              dnf remove -y "${package_name}"
+              if rpm -q "${package_name}"; then
+                echo "${package_name} remained installed after dnf remove."
+                exit 1
+              fi
+            '

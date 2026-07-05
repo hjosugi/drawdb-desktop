@@ -10,8 +10,9 @@ drawDBをTauriデスクトップ化するoverlayです。ローカルファイ�
 
 ## ダウンロード
 
-リリース成果物は GitHub Actions でビルドします。パッケージ方針と手動検証チェックリストは
-[`docs/release-packaging.md`](docs/release-packaging.md) を参照してください。
+リリース成果物は GitHub Actions でビルドします。パッケージ方針は
+[`docs/release-packaging.md`](docs/release-packaging.md)、現在の CI / 手動検証範囲は
+[`docs/validation-matrix.md`](docs/validation-matrix.md) を参照してください。
 
 | Platform | Architectures | Formats |
 | --- | --- | --- |
@@ -20,7 +21,9 @@ drawDBをTauriデスクトップ化するoverlayです。ローカルファイ�
 | macOS | Intel, Apple Silicon | `.dmg`, `.app` |
 | Linux | x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 
-Flatpak、AUR、Snap の公開は、Release の成果物名が安定し、必要なストア/レジストリ認証情報を用意できるまで延期します。
+RPM は first-party の Linux パッケージです。release workflow は Linux x64 RPM 成果物をダウンロードし、Fedora コンテナ上で `dnf` によるインストール smoke test を CI 実行します。GUI を含むリリース検証は別途記録します。
+
+Flatpak、AUR、Snap の公開は、Release の成果物名が安定し、必要なストア/レジストリ認証情報と各パッケージ方針レビューを用意できるまで延期します。
 
 ## セットアップ
 

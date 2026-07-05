@@ -12,7 +12,8 @@ Tauri overlay for drawDB with local files, Excel, SQL, and EN/JA i18n.
 
 Release artifacts are built by GitHub Actions. See
 [`docs/release-packaging.md`](docs/release-packaging.md) for the packaging
-policy and manual verification checklist.
+policy and [`docs/validation-matrix.md`](docs/validation-matrix.md) for current
+CI/manual verification coverage.
 
 | Platform | Architectures | Formats |
 | --- | --- | --- |
@@ -21,8 +22,13 @@ policy and manual verification checklist.
 | macOS | Intel, Apple Silicon | `.dmg`, `.app` |
 | Linux | x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 
+RPM is a first-party Linux package. The release workflow downloads the Linux x64
+RPM artifact and Fedora-install-smoke-tests it in CI with `dnf`; full GUI release
+validation remains tracked separately.
+
 Flatpak, AUR, and Snap publishing are deferred until release asset names are
-stable and the required store/registry credentials are available.
+stable, the required store/registry credentials are available, and the relevant
+packaging policy review is complete.
 
 ## Setup
 
