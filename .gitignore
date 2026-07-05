@@ -3,6 +3,7 @@ dist/
 coverage/
 package-lock.json
 src-tauri/target/
+overlay/src-tauri/gen/
 *.log
 .DS_Store
 .idea/

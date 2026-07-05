@@ -4,6 +4,8 @@
 
 # drawDB Desktop Overlay
 
+[![CI](https://github.com/hjosugi/drawdb-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/hjosugi/drawdb-desktop/actions/workflows/ci.yml)
+
 [日本語](README.ja.md)
 
 Tauri overlay for drawDB with local files, Excel, SQL, and EN/JA i18n.

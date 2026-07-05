@@ -5,6 +5,10 @@ on:
     branches: ["**"]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Vitest + coverage
@@ -79,3 +83,66 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: .\setup.ps1 --dry-run
+
+  tauri-rust:
+    name: Tauri overlay Rust gate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux Tauri dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+            patchelf build-essential libssl-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./overlay/src-tauri -> target"
+
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path overlay/src-tauri/Cargo.toml -- --check
+
+      - name: Check Tauri overlay crate
+        run: cargo check --manifest-path overlay/src-tauri/Cargo.toml --locked
+
+      - name: Run Clippy
+        run: cargo clippy --manifest-path overlay/src-tauri/Cargo.toml --locked --all-targets --all-features -- -D warnings
+
+  overlay-build:
+    name: Overlay-applied frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout overlay
+        uses: actions/checkout@v4
+        with:
+          path: overlay-src
+
+      - name: Checkout base drawDB-App
+        uses: actions/checkout@v4
+        with:
+          repository: khsuzan/drawDB-App
+          path: app
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Apply overlay and install dependencies
+        run: node overlay-src/scripts/setup.mjs --project-dir ../app
+
+      - name: Build frontend
+        working-directory: app
+        run: npm run build

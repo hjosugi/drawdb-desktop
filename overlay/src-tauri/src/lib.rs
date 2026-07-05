@@ -2,20 +2,32 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 #[derive(Clone, serde::Serialize)]
-struct OpenFilePayload { path: String }
+struct OpenFilePayload {
+    path: String,
+}
 
 fn extract_file_arg(args: &[String]) -> Option<String> {
-    args.iter().skip(1).find(|a| {
-        let l = a.to_lowercase();
-        l.ends_with(".ddb") || l.ends_with(".ddbpack") || l.ends_with(".xlsx")
-    }).cloned()
+    args.iter()
+        .skip(1)
+        .find(|a| {
+            let l = a.to_lowercase();
+            l.ends_with(".ddb") || l.ends_with(".ddbpack") || l.ends_with(".xlsx")
+        })
+        .cloned()
 }
 
 fn emit_open_file(app: &tauri::AppHandle, path: &str) {
     if let Some(w) = app.get_webview_window("main") {
-        let _ = w.show(); let _ = w.set_focus(); let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        let _ = w.unminimize();
     }
-    let _ = app.emit("open-file", OpenFilePayload { path: path.to_string() });
+    let _ = app.emit(
+        "open-file",
+        OpenFilePayload {
+            path: path.to_string(),
+        },
+    );
 }
 
 fn migrations() -> Vec<Migration> {
@@ -32,9 +44,12 @@ pub fn run() {
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            if let Some(p) = extract_file_arg(&argv) { emit_open_file(app, &p); }
-            else if let Some(w) = app.get_webview_window("main") {
-                let _ = w.show(); let _ = w.set_focus(); let _ = w.unminimize();
+            if let Some(p) = extract_file_arg(&argv) {
+                emit_open_file(app, &p);
+            } else if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.set_focus();
+                let _ = w.unminimize();
             }
         }));
     }
@@ -42,8 +57,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_sql::Builder::default()
-            .add_migrations("sqlite:drawdb.db", migrations()).build())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations("sqlite:drawdb.db", migrations())
+                .build(),
+        )
         .setup(|app| {
             let argv: Vec<String> = std::env::args().collect();
             if let Some(p) = extract_file_arg(&argv) {
