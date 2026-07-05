@@ -6,9 +6,12 @@ import {
   gzipText,
   gunzipText,
   listHistorySnapshots,
+  readHistorySettings,
+  recoverLatestHistorySnapshot,
   restoreHistorySnapshot,
   shouldCreateTimedSnapshot,
   summarizeDiagramDiff,
+  writeHistorySettings,
 } from "../overlay/src/utils/history.js";
 
 function memoryStorage() {
@@ -17,6 +20,11 @@ function memoryStorage() {
     files,
     async ensureDir() {},
     async readDir(path = "") {
+      if (!path) {
+        return [...new Set([...files.keys()].map((key) => key.split("/")[0]))]
+          .filter(Boolean)
+          .map((name) => ({ name }));
+      }
       const prefix = path ? `${path}/` : "";
       return [...files.keys()]
         .filter((key) => key.startsWith(prefix))
@@ -71,6 +79,30 @@ describe("desktop history snapshots", () => {
     expect(restored.tables.map((table) => table.name)).toContain("audit_log");
   });
 
+  it("recovers the latest snapshot by source path after a corrupt file open", async () => {
+    const storage = memoryStorage();
+    const first = makeShopDiagram();
+    const second = { ...first, name: "Recovered", tables: first.tables.slice(0, 1) };
+
+    await createHistorySnapshot(first, {
+      storage,
+      sourcePath: "/tmp/shop.ddb",
+      now: new Date("2026-01-01T00:00:00.000Z"),
+      reason: "save",
+    });
+    await createHistorySnapshot(second, {
+      storage,
+      sourcePath: "/tmp/shop.ddb",
+      now: new Date("2026-01-01T00:01:00.000Z"),
+      reason: "autosave",
+    });
+
+    const recovered = await recoverLatestHistorySnapshot({ sourcePath: "/tmp/shop.ddb", storage });
+
+    expect(recovered.name).toBe("Recovered");
+    expect(recovered.tables).toHaveLength(1);
+  });
+
   it("summarizes table and relationship changes", () => {
     const before = makeShopDiagram();
     const after = {
@@ -103,6 +135,29 @@ describe("desktop history snapshots", () => {
       new Date("2026-01-01T00:06:00Z"),
       { minIntervalMs: 5 * 60 * 1000 },
     )).toBe(true);
+  });
+
+  it("persists normalized history settings", () => {
+    const store = new Map();
+    const storage = {
+      getItem: (key) => store.get(key) || "",
+      setItem: (key, value) => store.set(key, value),
+    };
+
+    const written = writeHistorySettings({
+      enabled: false,
+      maxGenerations: 9999,
+      maxBytes: 1,
+      minIntervalMs: 1,
+    }, storage);
+
+    expect(written).toMatchObject({
+      enabled: false,
+      maxGenerations: 500,
+      maxBytes: 1024 * 1024,
+      minIntervalMs: 10_000,
+    });
+    expect(readHistorySettings(storage)).toEqual(written);
   });
 });
 

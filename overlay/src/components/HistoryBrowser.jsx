@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createTauriHistoryStorage,
   listHistorySnapshots,
+  openHistoryFolder,
   readHistorySnapshot,
+  readHistorySettings,
   restoreHistorySnapshot,
   summarizeDiagramDiff,
+  writeHistorySettings,
 } from "../utils/history.js";
 import { t } from "../i18n/index.js";
 
@@ -14,6 +17,7 @@ export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, 
   const [selected, setSelected] = useState(null);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
+  const [settings, setSettings] = useState(() => readHistorySettings());
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +61,19 @@ export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, 
     await onRestore?.(payload);
   }
 
+  function updateSetting(patch) {
+    const next = writeHistorySettings({ ...settings, ...patch });
+    setSettings(next);
+  }
+
+  async function openFolder() {
+    try {
+      await openHistoryFolder();
+    } catch (err) {
+      setError(err.message || String(err));
+    }
+  }
+
   return (
     <section className="history-browser" role="dialog" aria-label={t("history.title")}>
       <header>
@@ -75,6 +92,37 @@ export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, 
           ))}
         </ol>
         <aside>
+          <form className="history-browser__settings">
+            <label>
+              <input
+                type="checkbox"
+                checked={settings.enabled}
+                onChange={(event) => updateSetting({ enabled: event.target.checked })}
+              />
+              {t("history.enabled")}
+            </label>
+            <label>
+              {t("history.maxGenerations")}
+              <input
+                type="number"
+                min="1"
+                max="500"
+                value={settings.maxGenerations}
+                onChange={(event) => updateSetting({ maxGenerations: event.target.value })}
+              />
+            </label>
+            <label>
+              {t("history.maxMegabytes")}
+              <input
+                type="number"
+                min="1"
+                max="1024"
+                value={Math.round(settings.maxBytes / 1024 / 1024)}
+                onChange={(event) => updateSetting({ maxBytes: Number(event.target.value) * 1024 * 1024 })}
+              />
+            </label>
+            <button type="button" onClick={openFolder}>{t("history.openFolder")}</button>
+          </form>
           {preview ? (
             <>
               <h3>{preview.payload.name || selected?.name}</h3>

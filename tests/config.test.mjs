@@ -20,14 +20,34 @@ describe("shipped JSON config", () => {
     const setup = pkg.drawdbDesktopSetup;
 
     expect(setup).toBeTruthy();
-    expect(setup.npmPackages).toEqual(expect.arrayContaining(["jszip", "exceljs"]));
+    expect(setup.npmPackages).toEqual(expect.arrayContaining([
+      "jszip",
+      "exceljs",
+      "@tauri-apps/plugin-opener@2.5.4",
+    ]));
     expect(setup.cargoPackages.map((pkg) => pkg.name)).toEqual(expect.arrayContaining([
       "tauri-plugin-fs",
       "tauri-plugin-dialog",
       "tauri-plugin-single-instance",
       "tauri-plugin-sql",
+      "tauri-plugin-opener",
     ]));
     expect(pkg.scripts.setup).toBe("node scripts/setup.mjs");
+  });
+
+  it("grants local-history filesystem and opener permissions", () => {
+    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+    const permissions = capabilities.permissions;
+    const scope = permissions.find((permission) => permission.identifier === "fs:scope");
+
+    expect(permissions).toEqual(expect.arrayContaining([
+      "fs:allow-read-dir",
+      "fs:allow-remove",
+      "fs:allow-stat",
+      "opener:default",
+      "opener:allow-open-path",
+    ]));
+    expect(scope.allow.map((entry) => entry.path)).toEqual(expect.arrayContaining(["$APPDATA/**"]));
   });
 
   it("requests every first-party release bundle, including rpm", () => {

@@ -25,6 +25,10 @@ export default Object.freeze({
   "history.close": "Close",
   "history.empty": "No snapshot selected.",
   "history.restore": "Restore This Version",
+  "history.enabled": "Save local history",
+  "history.maxGenerations": "Generations",
+  "history.maxMegabytes": "Maximum MB",
+  "history.openFolder": "Open History Folder",
 
   "error.invalidDdbPack": "Invalid .ddbpack format",
   "error.missingDdbPackManifest": "manifest.json not found in .ddbpack",

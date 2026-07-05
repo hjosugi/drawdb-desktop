@@ -145,6 +145,39 @@ export async function listHistorySnapshots({
   return snapshots.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+export async function listAllHistorySnapshots({ storage = createTauriHistoryStorage() } = {}) {
+  const dirs = await storage.readDir("");
+  const all = [];
+  for (const dir of dirs) {
+    if (!dir.name) continue;
+    const entries = await storage.readDir(dir.name);
+    for (const file of entries.map((entry) => entry.name).filter((name) => String(name || "").endsWith(".ddb.json.gz"))) {
+      try {
+        const path = `${dir.name}/${file}`;
+        const bytes = await storage.readFile(path);
+        const snapshot = await decodeSnapshot(bytes);
+        all.push(snapshotEntry(snapshot, dir.name, file, byteLength(bytes)));
+      } catch (err) {
+        console.warn("drawDB history: skipped unreadable snapshot", `${dir.name}/${file}`, err);
+      }
+    }
+  }
+  return all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function recoverLatestHistorySnapshot({
+  sourcePath = "",
+  diagramId = "",
+  storage = createTauriHistoryStorage(),
+} = {}) {
+  const snapshots = await listAllHistorySnapshots({ storage });
+  const entry = snapshots.find((snapshot) => (
+    (sourcePath && snapshot.sourcePath === sourcePath)
+    || (diagramId && snapshot.diagramId === diagramId)
+  ));
+  return entry ? restoreHistorySnapshot(entry, storage) : null;
+}
+
 export async function readHistorySnapshot(entry, storage = createTauriHistoryStorage()) {
   const bytes = await storage.readFile(entry.path || `${entry.key}/${entry.file}`);
   return decodeSnapshot(bytes);
@@ -201,6 +234,16 @@ export async function gunzipText(bytes, DecompressionStreamCtor = globalThis.Dec
   }
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStreamCtor("gzip"));
   return new Response(stream).text();
+}
+
+export async function historyRootDir(root = HISTORY_ROOT) {
+  const { appDataDir, join } = await import("@tauri-apps/api/path");
+  return join(await appDataDir(), root);
+}
+
+export async function openHistoryFolder(root = HISTORY_ROOT) {
+  const { openPath } = await import("@tauri-apps/plugin-opener");
+  await openPath(await historyRootDir(root));
 }
 
 async function rotateHistory(storage, key, settings) {

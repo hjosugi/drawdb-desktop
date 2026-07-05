@@ -12,6 +12,7 @@ import {
 import {
   createHistorySnapshot,
   readHistorySettings,
+  recoverLatestHistorySnapshot,
   shouldCreateTimedSnapshot,
 } from "../utils/history";
 import { importFromPack } from "../utils/ddbpack";
@@ -58,7 +59,13 @@ useEffect(() => {
           loadDiagram(id);
         } else {
           const text = await readTextFile(path);
-          const data = parseDdb(text);
+          let data;
+          try {
+            data = parseDdb(text);
+          } catch (err) {
+            data = await recoverLatestHistorySnapshot({ sourcePath: path });
+            if (!data) throw err;
+          }
           const existing = data.diagramId
             ? await db.diagrams.where("diagramId").equals(data.diagramId).first() : null;
           const row = { ...data, lastModified: new Date() };
@@ -101,14 +108,24 @@ import { FilePathContext } from "../../context/FilePathContext";
 import HistoryBrowser from "../../components/HistoryBrowser";
 import { useState } from "react";
 import { setLocale, t } from "../../i18n/index.js";
-import { createHistorySnapshot, readHistorySettings } from "../../utils/history";
+import {
+  createHistorySnapshot,
+  readHistorySettings,
+  recoverLatestHistorySnapshot,
+} from "../../utils/history";
 
 const [historyOpen, setHistoryOpen] = useState(false);
 
 async function openDdb() {
   const p = await pickOpen("ddb"); if (!p) return;
   const text = await readTextFile(p);
-  const data = parseDdb(text);
+  let data;
+  try {
+    data = parseDdb(text);
+  } catch (err) {
+    data = await recoverLatestHistorySnapshot({ sourcePath: p });
+    if (!data) throw err;
+  }
   const existing = data.diagramId
     ? await db.diagrams.where("diagramId").equals(data.diagramId).first() : null;
   const row = { ...data, lastModified: new Date() };

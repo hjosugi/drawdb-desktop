@@ -25,6 +25,10 @@ export default Object.freeze({
   "history.close": "閉じる",
   "history.empty": "スナップショットが選択されていません。",
   "history.restore": "この版に戻す",
+  "history.enabled": "ローカル履歴を保存",
+  "history.maxGenerations": "保持世代数",
+  "history.maxMegabytes": "最大MB",
+  "history.openFolder": "履歴フォルダを開く",
 
   "error.invalidDdbPack": ".ddbpack形式が正しくありません",
   "error.missingDdbPackManifest": ".ddbpackにmanifest.jsonがありません",
