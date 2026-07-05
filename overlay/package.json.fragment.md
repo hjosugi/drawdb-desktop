@@ -8,6 +8,7 @@
   "dependencies": {
     "jszip": "^3.10.1",
     "exceljs": "^4.4.0",
+    "@tauri-apps/cli": "^2.0.0",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
@@ -23,7 +24,8 @@
 - **@tauri-apps/api** … `@tauri-apps/api/event` を `desktopIO.js` で使用します。
 - インストール一括コマンド:
   ```bash
-  npm install jszip exceljs @tauri-apps/api @tauri-apps/plugin-fs \
+  npm install jszip exceljs @tauri-apps/cli @tauri-apps/api @tauri-apps/plugin-fs \
     @tauri-apps/plugin-dialog @tauri-apps/plugin-sql
+  npm pkg set scripts.tauri=tauri
   npm uninstall xlsx   # 旧依存（あれば）
   ```

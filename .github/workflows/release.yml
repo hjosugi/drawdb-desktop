@@ -100,11 +100,13 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: app
+        shell: bash
         run: |
           npm install --no-audit --no-fund
-          npm install --no-audit --no-fund jszip exceljs @tauri-apps/api \
+          npm install --no-audit --no-fund jszip exceljs @tauri-apps/cli @tauri-apps/api \
             @tauri-apps/plugin-fs @tauri-apps/plugin-dialog \
             @tauri-apps/plugin-sql
+          npm pkg set scripts.tauri=tauri
 
       - name: Build app and (on tag) publish release
         uses: tauri-apps/tauri-action@v0
