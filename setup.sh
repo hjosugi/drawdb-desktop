@@ -13,7 +13,7 @@ cd "$PROJ"
 
 echo "==> npm install"
 npm i
-npm i jszip exceljs @tauri-apps/api @tauri-apps/plugin-fs @tauri-apps/plugin-dialog @tauri-apps/plugin-single-instance @tauri-apps/plugin-sql
+npm i jszip exceljs @tauri-apps/api @tauri-apps/plugin-fs @tauri-apps/plugin-dialog @tauri-apps/plugin-sql
 npm uninstall xlsx || true
 
 echo "==> cargo add"

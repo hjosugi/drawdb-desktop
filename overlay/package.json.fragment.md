@@ -11,7 +11,6 @@
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
-    "@tauri-apps/plugin-single-instance": "^2.0.0",
     "@tauri-apps/plugin-sql": "^2.0.0"
   }
 }
@@ -25,6 +24,6 @@
 - インストール一括コマンド:
   ```bash
   npm install jszip exceljs @tauri-apps/api @tauri-apps/plugin-fs \
-    @tauri-apps/plugin-dialog @tauri-apps/plugin-single-instance @tauri-apps/plugin-sql
+    @tauri-apps/plugin-dialog @tauri-apps/plugin-sql
   npm uninstall xlsx   # 旧依存（あれば）
   ```
