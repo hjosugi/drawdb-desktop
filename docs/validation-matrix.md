@@ -9,9 +9,9 @@ hosted-runner builds as physical-device validation.
 
 | Target | Release packages | CI coverage | Manual release status | Notes |
 | --- | --- | --- | --- | --- |
-| Windows 10 x64 | NSIS `.exe`, MSI `.msi` | Build artifacts from `windows-latest` only | Pending physical or VM install, launch, feature, and uninstall checks | GitHub-hosted Windows is not a Windows 10 desktop validation substitute. |
-| Windows 11 x64 | NSIS `.exe`, MSI `.msi` | Build artifacts from `windows-latest` only | Pending physical or VM install, launch, feature, and uninstall checks | Use the x64 Windows artifacts. |
-| Windows 11 ARM64 | NSIS `.exe` | Build artifact from `windows-11-arm` | Pending ARM device or VM install, launch, feature, and uninstall checks | MSI ARM64 remains deferred until device verification. |
+| Windows 10 x64 | NSIS `.exe`, MSI `.msi` with WebView2 `offlineInstaller` | Build artifacts from `windows-latest` only; config test enforces `bundle.windows.webviewInstallMode` | Pending clean VM install, launch, feature, and uninstall checks with WebView2 absent before install | GitHub-hosted Windows is not a Windows 10 desktop validation substitute. |
+| Windows 11 x64 | NSIS `.exe`, MSI `.msi` with WebView2 `offlineInstaller` | Build artifacts from `windows-latest` only; config test enforces `bundle.windows.webviewInstallMode` | Pending physical or VM install, launch, feature, and uninstall checks | Use the x64 Windows artifacts. |
+| Windows 11 ARM64 | NSIS `.exe` with WebView2 `offlineInstaller` | Build artifact from `windows-11-arm`; config test enforces `bundle.windows.webviewInstallMode` | Pending ARM device or VM install, launch, feature, and uninstall checks | MSI ARM64 remains deferred until device verification. |
 | macOS Intel | `.dmg`, `.app` | Build artifacts from `macos-latest` with `x86_64-apple-darwin` | Pending Intel Mac install, launch, feature, and uninstall checks | Hosted macOS builds do not prove Finder association or user launch behavior. |
 | macOS Apple Silicon | `.dmg`, `.app` | Build artifacts from `macos-latest` with `aarch64-apple-darwin` | Pending Apple Silicon Mac install, launch, feature, and uninstall checks | Physical hardware is preferred for release sign-off. |
 | Ubuntu 22.04 x64 | `.deb`, `.rpm`, `.AppImage` | Build artifacts from `ubuntu-22.04` | Pending VM or physical install, launch, feature, and uninstall checks | Ubuntu 22.04 is the Linux glibc baseline. |
@@ -25,6 +25,8 @@ For each target that requires manual release validation, record results in issue
 #14 before publishing a non-draft release:
 
 - Installer run and uninstall.
+- On Windows 10, install from both NSIS and MSI artifacts on a clean VM where
+  WebView2 Runtime is absent before installation, then verify first launch.
 - Launch and new diagram creation.
 - `.ddb` save and open through the dialog.
 - `.ddbpack` save and open.

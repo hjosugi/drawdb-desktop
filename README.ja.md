@@ -21,6 +21,11 @@ drawDBをTauriデスクトップ化するoverlayです。ローカルファイ�
 | macOS | Intel, Apple Silicon | `.dmg`, `.app` |
 | Linux | x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 
+Windows の NSIS / MSI インストーラーは WebView2 Runtime の offline installer
+を同梱します。Windows 成果物のサイズは大きくなりますが、WebView2 未導入の
+クリーンな Windows 10 でも、別途ランタイムをダウンロードせずに drawDB を
+インストールして起動できる方針です。
+
 RPM は first-party の Linux パッケージです。release workflow は Linux x64 RPM 成果物をダウンロードし、Fedora コンテナ上で `dnf`、D-Bus、Xvfb によるインストールと headless launch smoke test を CI 実行します。GUI を含むリリース検証は別途記録します。
 
 Flatpak、AUR、Snap の公開は、Release の成果物名が安定し、必要なストア/レジストリ認証情報と各パッケージ方針レビューを用意できるまで延期します。

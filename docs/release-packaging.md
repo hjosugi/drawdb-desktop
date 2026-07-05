@@ -18,6 +18,23 @@ coverage and manual release validation.
 | Linux | x64 | `.deb`, `.rpm`, `.AppImage` | `ubuntu-22.04` |
 | Linux | ARM64 | `.deb`, `.rpm`, `.AppImage` | `ubuntu-22.04-arm` |
 
+## Windows WebView2 runtime policy
+
+Windows installers explicitly set Tauri
+`bundle.windows.webviewInstallMode` to `{ "type": "offlineInstaller" }`.
+This applies to both NSIS and MSI output from the shared Tauri configuration.
+
+The policy favors clean Windows 10 installability over smaller downloads:
+
+- A Windows 10 machine without the Microsoft Edge WebView2 Runtime should be
+  able to install and launch drawDB from the downloaded installer without a
+  separate WebView2 runtime download during installation.
+- The Windows artifacts are expected to be larger because Tauri embeds the
+  Evergreen WebView2 Runtime offline installer.
+- The app still uses the system Evergreen WebView2 Runtime after installation so
+  runtime security updates remain managed by Microsoft; the project does not
+  pin a fixed WebView2 runtime version.
+
 Linux builds stay on Ubuntu 22.04 as the glibc baseline for compatibility with
 older supported distributions. The RPM bundle uses the Tauri `bundle.linux.rpm`
 metadata in `overlay/src-tauri/tauri.conf.json`, including runtime dependencies
@@ -42,3 +59,5 @@ Before publishing a non-draft release, download the workflow artifacts and recor
 the real-device matrix in issue #14. At minimum, verify install, launch, file
 save/open, `.ddbpack`, file association, Excel round-trip, SQL export, EN/JA
 switching, autosave restore, HiDPI display, and uninstall on each supported OS.
+For Windows 10, include a clean VM without WebView2 Runtime already installed and
+verify both NSIS and MSI reach first launch from the installer alone.

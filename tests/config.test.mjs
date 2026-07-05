@@ -71,6 +71,15 @@ describe("shipped JSON config", () => {
     ]));
   });
 
+  it("bundles the WebView2 runtime installer for Windows 10 machines without WebView2", () => {
+    const config = readJson("overlay/src-tauri/tauri.conf.json");
+
+    expect(config.bundle.targets).toEqual(expect.arrayContaining(["nsis", "msi"]));
+    expect(config.bundle.windows.webviewInstallMode).toEqual({
+      type: "offlineInstaller",
+    });
+  });
+
   it("keeps release workflow coverage aligned with supported architectures", () => {
     const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
 
@@ -114,6 +123,11 @@ describe("shipped JSON config", () => {
     expect(cliDocs).toContain("validate schema.ddb");
     expect(readme).toContain("Fedora-install-and-headless-launch-smoke-tests");
     expect(readme).toContain("docs/headless-cli.md");
+    expect(readme).toContain("WebView2 Runtime offline installer");
+    expect(releaseDocs).toContain("bundle.windows.webviewInstallMode");
+    expect(releaseDocs).toContain("{ \"type\": \"offlineInstaller\" }");
+    expect(validationMatrix).toContain("WebView2 `offlineInstaller`");
+    expect(validationMatrix).toContain("WebView2 Runtime is absent before installation");
 
     for (const target of [
       "Windows 10 x64",

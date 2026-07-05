@@ -65,6 +65,9 @@
       }
     ],
     "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller"
+      },
       "wix": {
         "language": [
           "en-US",

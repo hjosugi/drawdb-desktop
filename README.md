@@ -24,6 +24,11 @@ CI/manual verification coverage.
 | macOS | Intel, Apple Silicon | `.dmg`, `.app` |
 | Linux | x64, ARM64 | `.deb`, `.rpm`, `.AppImage` |
 
+Windows NSIS and MSI installers bundle the WebView2 Runtime offline installer.
+This makes Windows artifacts larger, but a clean Windows 10 machine without
+WebView2 should be able to install and launch drawDB without a separate runtime
+download step.
+
 RPM is a first-party Linux package. The release workflow downloads the Linux x64
 RPM artifact and Fedora-install-and-headless-launch-smoke-tests it in CI with
 `dnf`, D-Bus, and Xvfb; full GUI release validation remains tracked separately.
