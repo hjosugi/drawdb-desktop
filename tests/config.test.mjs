@@ -45,6 +45,10 @@ describe("shipped JSON config", () => {
     expect(setup.npmPackages).toEqual(expect.arrayContaining([
       "jszip",
       "exceljs",
+      "@tauri-apps/api@2.11.1",
+      "@tauri-apps/plugin-fs@2.5.1",
+      "@tauri-apps/plugin-dialog@2.7.1",
+      "@tauri-apps/plugin-sql@2.4.0",
       "@tauri-apps/plugin-opener@2.5.4",
       "@tauri-apps/plugin-window-state@2.4.1",
     ]));

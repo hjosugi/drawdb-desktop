@@ -172,7 +172,7 @@ git clone https://github.com/khsuzan/drawDB-App.git drawDB-Desktop
 xcopy /E /I /Y overlay\* drawDB-Desktop\
 cd drawDB-Desktop
 npm i
-npm i jszip exceljs @tauri-apps/cli@2.9.6 @tauri-apps/api@2.9.1 @tauri-apps/plugin-fs@2.4.3 @tauri-apps/plugin-dialog@2.4.0 @tauri-apps/plugin-sql@2.3.0
+npm i jszip exceljs @tauri-apps/cli@2.11.4 @tauri-apps/api@2.11.1 @tauri-apps/plugin-fs@2.5.1 @tauri-apps/plugin-dialog@2.7.1 @tauri-apps/plugin-sql@2.4.0
 npm pkg set scripts.tauri=tauri
 npm uninstall xlsx
 cd src-tauri

@@ -8,11 +8,11 @@
   "dependencies": {
     "jszip": "^3.10.1",
     "exceljs": "^4.4.0",
-    "@tauri-apps/cli": "2.9.6",
-    "@tauri-apps/api": "2.9.1",
-    "@tauri-apps/plugin-fs": "2.4.3",
-    "@tauri-apps/plugin-dialog": "2.4.0",
-    "@tauri-apps/plugin-sql": "2.3.0",
+    "@tauri-apps/cli": "2.11.4",
+    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-fs": "2.5.1",
+    "@tauri-apps/plugin-dialog": "2.7.1",
+    "@tauri-apps/plugin-sql": "2.4.0",
     "@tauri-apps/plugin-opener": "2.5.4",
     "@tauri-apps/plugin-window-state": "2.4.1"
   }
@@ -28,8 +28,8 @@
 - **@tauri-apps/plugin-window-state** … Tauri の標準プラグインでウィンドウのサイズ・位置・最大化状態を保存/復元します。
 - インストール一括コマンド:
   ```bash
-  npm install jszip exceljs @tauri-apps/cli@2.9.6 @tauri-apps/api@2.9.1 @tauri-apps/plugin-fs@2.4.3 \
-    @tauri-apps/plugin-dialog@2.4.0 @tauri-apps/plugin-sql@2.3.0 @tauri-apps/plugin-opener@2.5.4 \
+  npm install jszip exceljs @tauri-apps/cli@2.11.4 @tauri-apps/api@2.11.1 @tauri-apps/plugin-fs@2.5.1 \
+    @tauri-apps/plugin-dialog@2.7.1 @tauri-apps/plugin-sql@2.4.0 @tauri-apps/plugin-opener@2.5.4 \
     @tauri-apps/plugin-window-state@2.4.1
   npm pkg set scripts.tauri=tauri
   npm uninstall xlsx   # 旧依存（あれば）
