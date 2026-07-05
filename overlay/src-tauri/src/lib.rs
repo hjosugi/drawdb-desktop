@@ -1,3 +1,4 @@
+use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
@@ -6,22 +7,55 @@ struct OpenFilePayload {
     path: String,
 }
 
+#[derive(Default)]
+struct OpenFileQueue(Mutex<OpenFileState>);
+
+#[derive(Default)]
+struct OpenFileState {
+    frontend_ready: bool,
+    pending: Vec<String>,
+}
+
+impl OpenFileQueue {
+    fn push(&self, path: String) -> bool {
+        let mut state = self.0.lock().expect("open file state lock poisoned");
+        if state.frontend_ready {
+            true
+        } else {
+            state.pending.push(path);
+            false
+        }
+    }
+
+    fn mark_frontend_ready(&self) -> Vec<String> {
+        let mut state = self.0.lock().expect("open file state lock poisoned");
+        state.frontend_ready = true;
+        std::mem::take(&mut state.pending)
+    }
+}
+
+fn is_openable_file_path(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    lower.ends_with(".ddb") || lower.ends_with(".ddbpack") || lower.ends_with(".xlsx")
+}
+
 fn extract_file_arg(args: &[String]) -> Option<String> {
     args.iter()
         .skip(1)
-        .find(|a| {
-            let l = a.to_lowercase();
-            l.ends_with(".ddb") || l.ends_with(".ddbpack") || l.ends_with(".xlsx")
-        })
+        .find(|a| is_openable_file_path(a))
         .cloned()
 }
 
-fn emit_open_file(app: &tauri::AppHandle, path: &str) {
+fn show_main_window(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.show();
         let _ = w.set_focus();
         let _ = w.unminimize();
     }
+}
+
+fn emit_open_file(app: &tauri::AppHandle, path: &str) {
+    show_main_window(app);
     let _ = app.emit(
         "open-file",
         OpenFilePayload {
@@ -29,6 +63,35 @@ fn emit_open_file(app: &tauri::AppHandle, path: &str) {
         },
     );
 }
+
+fn queue_open_file(app: &tauri::AppHandle, path: String) {
+    show_main_window(app);
+    if app.state::<OpenFileQueue>().push(path.clone()) {
+        emit_open_file(app, &path);
+    }
+}
+
+#[tauri::command]
+fn frontend_ready(state: tauri::State<'_, OpenFileQueue>) -> Vec<String> {
+    state.mark_frontend_ready()
+}
+
+#[cfg(target_os = "macos")]
+fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
+    if let tauri::RunEvent::Opened { urls } = event {
+        for url in urls {
+            if let Ok(path) = url.to_file_path() {
+                let path = path.to_string_lossy().into_owned();
+                if is_openable_file_path(&path) {
+                    queue_open_file(app, path);
+                }
+            }
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn handle_run_event(_app: &tauri::AppHandle, _event: tauri::RunEvent) {}
 
 fn migrations() -> Vec<Migration> {
     vec![Migration {
@@ -45,15 +108,15 @@ pub fn run() {
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if let Some(p) = extract_file_arg(&argv) {
-                emit_open_file(app, &p);
-            } else if let Some(w) = app.get_webview_window("main") {
-                let _ = w.show();
-                let _ = w.set_focus();
-                let _ = w.unminimize();
+                queue_open_file(app, p);
+            } else {
+                show_main_window(app);
             }
         }));
     }
     builder
+        .manage(OpenFileQueue::default())
+        .invoke_handler(tauri::generate_handler![frontend_ready])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
@@ -65,14 +128,57 @@ pub fn run() {
         .setup(|app| {
             let argv: Vec<String> = std::env::args().collect();
             if let Some(p) = extract_file_arg(&argv) {
-                let handle = app.handle().clone();
-                std::thread::spawn(move || {
-                    std::thread::sleep(std::time::Duration::from_millis(700));
-                    emit_open_file(&handle, &p);
-                });
+                queue_open_file(app.handle(), p);
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            handle_run_event(app, event);
+        });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_supported_file_args_case_insensitively() {
+        let args = vec![
+            "drawdb-desktop".to_string(),
+            "--flag".to_string(),
+            "/tmp/schema.DDBPACK".to_string(),
+        ];
+
+        assert_eq!(
+            extract_file_arg(&args),
+            Some("/tmp/schema.DDBPACK".to_string())
+        );
+    }
+
+    #[test]
+    fn ignores_unsupported_startup_args() {
+        let args = vec![
+            "drawdb-desktop".to_string(),
+            "/tmp/schema.sql".to_string(),
+            "--flag".to_string(),
+        ];
+
+        assert_eq!(extract_file_arg(&args), None);
+    }
+
+    #[test]
+    fn queues_until_frontend_ready_then_emits_immediately() {
+        let queue = OpenFileQueue::default();
+
+        assert!(!queue.push("/tmp/a.ddb".to_string()));
+        assert!(!queue.push("/tmp/b.ddbpack".to_string()));
+        assert_eq!(
+            queue.mark_frontend_ready(),
+            vec!["/tmp/a.ddb".to_string(), "/tmp/b.ddbpack".to_string()]
+        );
+        assert!(queue.push("/tmp/c.xlsx".to_string()));
+        assert!(queue.mark_frontend_ready().is_empty());
+    }
 }

@@ -48,6 +48,8 @@ useEffect(() => {
   if (!desktopAvailable()) return;
   let unlisten = null;
   (async () => {
+    // onOpenFile registers the runtime listener, then signals frontend_ready and
+    // replays any startup file-open paths through this same handler.
     unlisten = await onOpenFile(async (path) => {
       try {
         const lower = path.toLowerCase();

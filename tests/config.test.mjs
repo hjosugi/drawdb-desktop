@@ -108,6 +108,22 @@ describe("shipped JSON config", () => {
     expect(scopedPaths).not.toEqual(expect.arrayContaining(["/**", "**", "$HOME/**", "$ROOT/**"]));
   });
 
+  it("uses a frontend-ready handshake for startup file opens", () => {
+    const lib = readFileSync("overlay/src-tauri/src/lib.rs", "utf8");
+    const desktopIO = readFileSync("overlay/src/utils/desktopIO.js", "utf8");
+    const listenIndex = desktopIO.indexOf('listen("open-file"');
+    const readyIndex = desktopIO.indexOf('invoke("frontend_ready"');
+
+    expect(lib).toContain("#[tauri::command]");
+    expect(lib).toContain("fn frontend_ready");
+    expect(lib).toContain("OpenFileQueue");
+    expect(lib).toContain("tauri::generate_handler![frontend_ready]");
+    expect(lib).not.toContain("thread::sleep");
+    expect(lib).not.toContain("Duration::from_millis(700)");
+    expect(listenIndex).toBeGreaterThanOrEqual(0);
+    expect(readyIndex).toBeGreaterThan(listenIndex);
+  });
+
   it("requests every first-party release bundle, including rpm", () => {
     const config = readJson("overlay/src-tauri/tauri.conf.json");
     expect(config.bundle.targets).toEqual(expect.arrayContaining([
