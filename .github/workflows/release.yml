@@ -139,7 +139,8 @@ jobs:
             persist_env APPLE_CERTIFICATE_PASSWORD "${SIGNING_CERTIFICATE_PASSWORD}"
             persist_env APPLE_SIGNING_IDENTITY "${SIGNING_IDENTITY}"
           else
-            echo "No Apple signing certificate configured; macOS bundles will use Tauri's unsigned/ad-hoc path."
+            persist_env APPLE_SIGNING_IDENTITY "-"
+            echo "No Apple signing certificate configured; using Tauri's ad-hoc signing identity."
           fi
 
           if [[ -n "${NOTARY_APPLE_ID}" || -n "${NOTARY_APPLE_PASSWORD}" || -n "${NOTARY_TEAM_ID}" ]]; then

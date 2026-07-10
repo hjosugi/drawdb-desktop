@@ -255,6 +255,7 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow).toContain("APPLE_API_PRIVATE_KEY");
     expect(releaseWorkflow).toContain("APPLE_API_KEY_PATH");
     expect(releaseWorkflow).toContain("persist_env APPLE_CERTIFICATE");
+    expect(releaseWorkflow).toContain('persist_env APPLE_SIGNING_IDENTITY "-"');
     expect(releaseWorkflow).not.toContain(
       "          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}",
     );

@@ -38,7 +38,9 @@ secrets before publishing updater-enabled releases.
 Release builds also include guarded OS signing hooks. Windows Authenticode
 signing uses Azure Artifact Signing secrets or a runner certificate thumbprint;
 macOS uses Tauri's Developer ID signing/notarization environment variables with
-hardened runtime enabled.
+hardened runtime enabled. When Developer ID credentials are not configured, the
+release workflow applies Tauri's ad-hoc identity so Apple Silicon bundles and
+macOS updater archives are still code signed locally (but not Apple-notarized).
 
 RPM is a first-party Linux package. The release workflow downloads the Linux x64
 RPM artifact and Fedora-install-and-headless-launch-smoke-tests it in CI with
