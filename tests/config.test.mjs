@@ -373,6 +373,24 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow.match(new RegExp(baseRevision, "g"))).toHaveLength(2);
   });
 
+  it("uses current Node 24 based GitHub action majors", () => {
+    const workflows = [
+      readFileSync(".github/workflows/ci.yml", "utf8"),
+      readFileSync(".github/workflows/release.yml", "utf8"),
+    ].join("\n");
+
+    for (const action of [
+      "actions/checkout@v7",
+      "actions/setup-node@v6",
+      "actions/setup-python@v6",
+      "actions/upload-artifact@v7",
+      "actions/download-artifact@v8",
+    ]) {
+      expect(workflows).toContain(action);
+    }
+    expect(workflows).not.toMatch(/actions\/(?:checkout|setup-node)@v4/);
+  });
+
   it("verifies the Linux x64 RPM artifact in Fedora after the release build", () => {
     const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
 

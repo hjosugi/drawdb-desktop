@@ -48,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout overlay
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: overlay-src
 
@@ -59,7 +59,7 @@ jobs:
           echo "BASE_REF=${{ github.event.inputs.base_ref || 'c80cb68e9d74b783098c47301c76a693615def95' }}" >> "$GITHUB_ENV"
 
       - name: Checkout base drawDB-App
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.BASE_REPO }}
           ref: ${{ env.BASE_REF }}
@@ -74,7 +74,7 @@ jobs:
             patchelf build-essential libssl-dev file rpm xdg-utils
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -92,7 +92,7 @@ jobs:
         run: node overlay-src/scripts/setup.mjs --project-dir ../app
 
       - name: Setup Python (icon generation)
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload bundles as workflow artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: drawdb-${{ matrix.os }}-${{ matrix.artifact_suffix || matrix.rust_target || 'native' }}
           path: |
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Linux x64 artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: drawdb-ubuntu-22.04-x64
           path: rpm-artifact

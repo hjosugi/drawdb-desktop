@@ -14,9 +14,9 @@ jobs:
     name: Vitest + coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -49,8 +49,8 @@ jobs:
     name: Icon generator runs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
       - name: Generate default icon set
@@ -67,9 +67,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -92,7 +92,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Linux Tauri dependencies
         if: runner.os == 'Linux'
@@ -124,19 +124,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout overlay
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: overlay-src
 
       - name: Checkout base drawDB-App
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: khsuzan/drawDB-App
           # Keep overlay validation reproducible and aligned with release.yml.
           ref: c80cb68e9d74b783098c47301c76a693615def95
           path: app
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
 
