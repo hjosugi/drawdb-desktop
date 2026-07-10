@@ -1,6 +1,6 @@
 {
   "name": "drawdb-desktop-overlay",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "type": "module",
   "description": "Desktop overlay for drawDB-App: .ddb/.ddbpack file storage, Excel I/O, and Oracle/MySQL/PostgreSQL SQL dialects for Tauri.",
@@ -30,6 +30,7 @@
   "drawdbDesktopSetup": {
     "projectName": "drawDB-Desktop",
     "baseRepo": "https://github.com/khsuzan/drawDB-App.git",
+    "baseRef": "c80cb68e9d74b783098c47301c76a693615def95",
     "npmPackages": [
       "jszip",
       "exceljs",
@@ -39,7 +40,9 @@
       "@tauri-apps/plugin-dialog@2.7.1",
       "@tauri-apps/plugin-sql@2.4.0",
       "@tauri-apps/plugin-opener@2.5.4",
-      "@tauri-apps/plugin-window-state@2.4.1"
+      "@tauri-apps/plugin-window-state@2.4.1",
+      "@tauri-apps/plugin-process@2.3.1",
+      "@tauri-apps/plugin-updater@2.10.1"
     ],
     "cargoPackages": [
       {
@@ -60,6 +63,12 @@
       },
       {
         "name": "tauri-plugin-opener"
+      },
+      {
+        "name": "tauri-plugin-process"
+      },
+      {
+        "name": "tauri-plugin-updater"
       },
       {
         "name": "tauri-plugin-window-state"

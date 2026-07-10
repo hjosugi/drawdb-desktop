@@ -4,11 +4,12 @@ import { t } from "../i18n/index.js";
 const isTauri = () =>
   typeof window !== "undefined" && !!window.__TAURI_INTERNALS__;
 
-let _fs = null, _dlg = null, _evt = null, _core = null;
+let _fs = null, _dlg = null, _evt = null, _core = null, _win = null;
 async function fs()  { if (!_fs)  _fs  = await import("@tauri-apps/plugin-fs");     return _fs; }
 async function dlg() { if (!_dlg) _dlg = await import("@tauri-apps/plugin-dialog"); return _dlg; }
 async function evt() { if (!_evt) _evt = await import("@tauri-apps/api/event");     return _evt; }
 async function core() { if (!_core) _core = await import("@tauri-apps/api/core");   return _core; }
+async function win() { if (!_win) _win = await import("@tauri-apps/api/window");     return _win; }
 
 function filters(kind) {
   const m = {
@@ -57,6 +58,34 @@ export async function pickSave(defaultName, kind = "ddb") {
   return await save({ defaultPath: defaultName, filters: filters(kind) });
 }
 
+export async function onCloseRequested(handler) {
+  if (!isTauri()) return () => {};
+  const { getCurrentWindow } = await win();
+  return await getCurrentWindow().onCloseRequested(handler);
+}
+
+export async function closeCurrentWindow() {
+  if (!isTauri()) return;
+  const { getCurrentWindow } = await win();
+  await getCurrentWindow().close();
+}
+
+export async function confirmCloseWithUnsavedChanges() {
+  if (!isTauri()) return "cancel";
+  const { message } = await dlg();
+  const save = t("close.saveAndExit");
+  const discard = t("close.discardAndExit");
+  const cancel = t("close.cancel");
+  const result = await message(t("close.unsavedMessage"), {
+    title: t("close.unsavedTitle"),
+    kind: "warning",
+    buttons: { yes: save, no: discard, cancel },
+  });
+  if (result === save) return "save";
+  if (result === discard) return "discard";
+  return "cancel";
+}
+
 export async function readTextFile(path)   { const { readTextFile } = await fs(); return readTextFile(path); }
 export async function writeTextFile(p, t)  { const { writeTextFile } = await fs(); return writeTextFile(p, t); }
 export async function readBinaryFile(p)    { const { readFile } = await fs(); return readFile(p); }
@@ -64,16 +93,30 @@ export async function writeBinaryFile(p,b) { const { writeFile } = await fs(); r
 export async function fileExists(path)     { const { exists } = await fs(); return exists(path); }
 
 export function makeAutoSaver(writer, wait = 800) {
-  let timer = null, pending = null, inflight = false;
+  let timer = null, pending = null, active = null, lastError = null;
   const run = async () => {
-    if (inflight || pending == null) return;
-    const data = pending; pending = null; inflight = true;
-    try { await writer(data); } catch (e) { console.error("autoSaver:", e); }
-    finally { inflight = false; }
-    if (pending != null) run();
+    if (active) return active;
+    active = (async () => {
+      while (pending != null) {
+        const data = pending; pending = null;
+        try {
+          await writer(data);
+          lastError = null;
+        } catch (e) {
+          lastError = e;
+          console.error("autoSaver:", e);
+        }
+      }
+    })().finally(() => { active = null; });
+    return active;
   };
   return {
     schedule(data) { pending = data; clearTimeout(timer); timer = setTimeout(run, wait); },
-    async flush() { clearTimeout(timer); await run(); },
+    async flush() {
+      clearTimeout(timer);
+      await run();
+      if (lastError) throw lastError;
+    },
+    hasPending() { return pending != null || active != null; },
   };
 }

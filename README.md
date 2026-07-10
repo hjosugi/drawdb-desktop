@@ -29,6 +29,17 @@ This makes Windows artifacts larger, but a clean Windows 10 machine without
 WebView2 should be able to install and launch drawDB without a separate runtime
 download step.
 
+The desktop app is configured for Tauri's signed updater. Release builds publish
+`latest.json` to GitHub Releases and the app checks that endpoint on startup and
+from the File menu. Maintainers must set `TAURI_SIGNING_PRIVATE_KEY` and, if the
+key is encrypted, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` as GitHub Actions
+secrets before publishing updater-enabled releases.
+
+Release builds also include guarded OS signing hooks. Windows Authenticode
+signing uses Azure Artifact Signing secrets or a runner certificate thumbprint;
+macOS uses Tauri's Developer ID signing/notarization environment variables with
+hardened runtime enabled.
+
 RPM is a first-party Linux package. The release workflow downloads the Linux x64
 RPM artifact and Fedora-install-and-headless-launch-smoke-tests it in CI with
 `dnf`, D-Bus, and Xvfb; full GUI release validation remains tracked separately.
@@ -58,7 +69,11 @@ The compatibility wrappers call the same Node setup script:
 .\setup.ps1
 ```
 
-The setup script clones the base drawDB-App checkout, copies `overlay/`, installs the frontend and Rust dependencies listed in `package.json`, and leaves the app ready for the manual patch steps in `APPLY_PATCH.md`. Use `npm run setup:dry-run` to validate the setup plan without cloning or installing.
+The setup script clones the pinned, CI-tested base drawDB-App revision, copies `overlay/`, installs
+the frontend and Rust dependencies listed in `package.json`, and automatically
+wires the release-critical updater UI. The remaining feature integrations are
+documented in `APPLY_PATCH.md`. Use `npm run setup:dry-run` to validate the setup
+plan without cloning or installing.
 
 ## Headless CLI
 

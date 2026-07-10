@@ -26,6 +26,17 @@ Windows の NSIS / MSI インストーラーは WebView2 Runtime の offline ins
 クリーンな Windows 10 でも、別途ランタイムをダウンロードせずに drawDB を
 インストールして起動できる方針です。
 
+デスクトップアプリは Tauri の署名付き updater を設定済みです。Release build
+は GitHub Releases に `latest.json` を公開し、アプリは起動時と File メニューから
+その endpoint を確認します。updater 対応 Release を公開する前に、maintainer は
+`TAURI_SIGNING_PRIVATE_KEY` と、暗号化鍵を使う場合は
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` を GitHub Actions Secrets に登録してください。
+
+Release build には OS 署名のフックも入っています。Windows Authenticode 署名は
+Azure Artifact Signing の Secrets または runner 上の証明書 thumbprint を使い、
+macOS は hardened runtime と Tauri の Developer ID 署名 / notarization 用環境変数を
+使います。
+
 RPM は first-party の Linux パッケージです。release workflow は Linux x64 RPM 成果物をダウンロードし、Fedora コンテナ上で `dnf`、D-Bus、Xvfb によるインストールと headless launch smoke test を CI 実行します。GUI を含むリリース検証は別途記録します。
 Linux の `.deb` / `.rpm` には `.ddb` と `.ddbpack` 用の drawDB MIME
 metadata を含めます。AppImage は portable artifact のため、Gear Lever、
@@ -51,7 +62,10 @@ npm run setup
 .\setup.ps1
 ```
 
-セットアップスクリプトはベースの drawDB-App を clone し、`overlay/` をコピーし、`package.json` にまとめた frontend / Rust 依存を導入します。その後 `APPLY_PATCH.md` の手動パッチを適用してください。clone や install を行わずに手順だけ確認する場合は `npm run setup:dry-run` を使います。
+セットアップスクリプトは CI 検証済み commit に固定した drawDB-App を clone し、`overlay/` をコピーし、
+`package.json` にまとめた frontend / Rust 依存を導入して、Release に必須の updater UI を
+自動統合します。残りの機能統合は `APPLY_PATCH.md` を参照してください。clone や install を
+行わずに手順だけ確認する場合は `npm run setup:dry-run` を使います。
 
 ## ヘッドレス CLI
 

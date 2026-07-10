@@ -10,6 +10,8 @@
     "core:event:default",
     "core:window:default",
     "dialog:default",
+    "dialog:allow-ask",
+    "dialog:allow-message",
     "dialog:allow-open",
     "dialog:allow-save",
     "fs:default",
@@ -25,6 +27,8 @@
     "opener:default",
     "opener:allow-open-path",
     "opener:allow-reveal-item-in-dir",
+    "process:default",
+    "updater:default",
     "window-state:default",
     {
       "identifier": "fs:scope",

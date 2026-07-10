@@ -1,11 +1,73 @@
 # Release packaging policy
 
 This project publishes GitHub Release artifacts from `.github/workflows/release.yml`.
-The workflow deliberately builds unsigned installers; code signing, notarization,
-Microsoft Store, Flathub, Snap Store, and AUR publication need separate maintainer
-credentials and are not claimed by CI. See
+The workflow supports conditional Windows Authenticode signing, macOS Developer
+ID signing/notarization, and Tauri updater artifact signing when the maintainer
+has configured the required GitHub Actions secrets. Microsoft Store, Flathub,
+Snap Store, and AUR publication need separate credentials and are not claimed by
+CI. See
 [`validation-matrix.md`](validation-matrix.md) for the current split between CI
 coverage and manual release validation.
+
+The tagged release path pins the upstream drawDB-App commit used by the CI
+overlay-build gate. Update both workflows together after validating a newer
+upstream revision; workflow dispatch can override `base_ref` for an explicit
+compatibility build.
+
+## OS code signing
+
+Windows bundles use `bundle.windows.signCommand`, which calls
+`overlay/src-tauri/scripts/sign-windows.ps1` during Tauri bundling. The script is
+credential-gated:
+
+- Azure Artifact Signing path: set `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+  `AZURE_CLIENT_SECRET`, `AZURE_ARTIFACT_SIGNING_ENDPOINT`,
+  `AZURE_ARTIFACT_SIGNING_ACCOUNT`, and
+  `AZURE_ARTIFACT_SIGNING_CERT_PROFILE`. The release workflow installs Tauri's
+  documented `artifact-signing-cli`, signs through the configured account and
+  certificate profile, and verifies with `signtool verify /pa`.
+- Local/enterprise certificate path: provide a certificate in the runner's
+  certificate store and set `WINDOWS_CERTIFICATE_THUMBPRINT`.
+- If neither configuration is present, the script logs that Windows signing is
+  skipped and leaves the bundle unsigned so non-release CI remains usable.
+
+macOS bundles set `bundle.macOS.hardenedRuntime: true` and use
+`entitlements.plist` with the JavaScriptCore JIT entitlement needed by WKWebView
+on Apple Silicon. Tauri signs and notarizes on macOS runners when the usual
+Apple environment variables are present:
+
+- Certificate: `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`,
+  `APPLE_SIGNING_IDENTITY`.
+- Apple ID notarization: `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`.
+- App Store Connect API notarization: `APPLE_API_ISSUER`, `APPLE_API_KEY`, and
+  `APPLE_API_PRIVATE_KEY`. The workflow writes the private key to a protected
+  runner-temporary file and exports `APPLE_API_KEY_PATH` only for the build.
+
+Maintainers still need the external account setup: Azure Artifact Signing or an
+OV/EV Authenticode certificate for Windows, and Apple Developer Program access
+with a Developer ID Application certificate for macOS. Before publishing a
+non-draft release, verify `signtool verify /pa` for Windows artifacts and
+`xcrun stapler validate` for macOS `.app`/`.dmg` artifacts.
+
+## Auto-updater artifacts
+
+`overlay/src-tauri/tauri.conf.json` enables `bundle.createUpdaterArtifacts` and
+points the updater at:
+
+```text
+https://github.com/hjosugi/drawdb-desktop/releases/latest/download/latest.json
+```
+
+The public updater key is committed in the Tauri config. Keep the matching
+private key out of the repository and store its content in the
+`TAURI_SIGNING_PRIVATE_KEY` GitHub Actions secret. If the private key is
+password-protected, also set `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+
+`release.yml` uses `tauri-apps/tauri-action@v1` with `uploadUpdaterJson: true`
+and `updaterJsonPreferNsis: true`, so the draft GitHub Release receives the
+platform bundles, `.sig` files, and `latest.json`. Before publishing a release,
+verify an older installed build can detect, download, verify, install, and
+restart into the new version on Windows, macOS, and Linux AppImage.
 
 ## Release artifacts
 

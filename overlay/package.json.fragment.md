@@ -14,7 +14,9 @@
     "@tauri-apps/plugin-dialog": "2.7.1",
     "@tauri-apps/plugin-sql": "2.4.0",
     "@tauri-apps/plugin-opener": "2.5.4",
-    "@tauri-apps/plugin-window-state": "2.4.1"
+    "@tauri-apps/plugin-window-state": "2.4.1",
+    "@tauri-apps/plugin-process": "2.3.1",
+    "@tauri-apps/plugin-updater": "2.10.1"
   }
 }
 ```
@@ -26,11 +28,13 @@
 - **@tauri-apps/api** … `@tauri-apps/api/event` を `desktopIO.js` で使用します。
 - **@tauri-apps/plugin-opener** … ローカル履歴の保存先フォルダを OS のファイルマネージャで開くために使用します。
 - **@tauri-apps/plugin-window-state** … Tauri の標準プラグインでウィンドウのサイズ・位置・最大化状態を保存/復元します。
+- **@tauri-apps/plugin-updater** … GitHub Releases の `latest.json` から更新確認・ダウンロード・インストールを行います。
+- **@tauri-apps/plugin-process** … 更新適用後にアプリを再起動するために使用します。
 - インストール一括コマンド:
   ```bash
   npm install jszip exceljs @tauri-apps/cli@2.11.4 @tauri-apps/api@2.11.1 @tauri-apps/plugin-fs@2.5.1 \
     @tauri-apps/plugin-dialog@2.7.1 @tauri-apps/plugin-sql@2.4.0 @tauri-apps/plugin-opener@2.5.4 \
-    @tauri-apps/plugin-window-state@2.4.1
+    @tauri-apps/plugin-window-state@2.4.1 @tauri-apps/plugin-process@2.3.1 @tauri-apps/plugin-updater@2.10.1
   npm pkg set scripts.tauri=tauri
   npm uninstall xlsx   # 旧依存（あれば）
   ```

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cpSync, existsSync, readFileSync, statSync } from "node:fs";
+import { cpSync, existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -21,27 +21,35 @@ function main() {
   const overlayDir = join(rootDir, "overlay");
   const projectDir = resolve(rootDir, args.projectDir ?? setupConfig.projectName);
   const baseRepo = args.baseRepo ?? setupConfig.baseRepo;
+  const baseRef = args.baseRef ?? setupConfig.baseRef;
 
   ensureDirectory(overlayDir, "overlay folder");
   requireCommands(["git", "npm", "cargo"]);
 
   log(`Base repo: ${baseRepo}`);
+  log(`Base ref: ${baseRef}`);
   log(`Project dir: ${projectDir}`);
   if (args.dryRun) {
     log("Dry run: commands are printed but clone, copy, and installs are skipped.");
   }
 
-  ensureBaseCheckout(projectDir, baseRepo);
+  ensureBaseCheckout(projectDir, baseRepo, baseRef);
   applyOverlay(overlayDir, projectDir);
+  applyDesktopIntegration(projectDir);
   installFrontend(projectDir);
   installRustPlugins(join(projectDir, "src-tauri"));
 
-  log("Apply manual patches per src/patches/PATCHES.md and PATCHES_FULL.md.");
+  log("Updater integration applied. Apply the remaining manual patches per src/patches/PATCHES.md and PATCHES_FULL.md.");
   log("Then run: npm run tauri build");
 }
 
 function parseArgs(rawArgs) {
-  const parsed = { dryRun: false, projectDir: undefined, baseRepo: undefined };
+  const parsed = {
+    dryRun: false,
+    projectDir: undefined,
+    baseRepo: undefined,
+    baseRef: undefined,
+  };
   for (let i = 0; i < rawArgs.length; i++) {
     const arg = rawArgs[i];
     if (arg === "--dry-run") {
@@ -50,6 +58,8 @@ function parseArgs(rawArgs) {
       parsed.projectDir = readValue(rawArgs, ++i, arg);
     } else if (arg === "--base-repo") {
       parsed.baseRepo = readValue(rawArgs, ++i, arg);
+    } else if (arg === "--base-ref") {
+      parsed.baseRef = readValue(rawArgs, ++i, arg);
     } else if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
@@ -75,6 +85,7 @@ Options:
   --dry-run              Print setup steps without cloning or installing.
   --project-dir <path>   Override the target checkout directory.
   --base-repo <url>      Override the base drawDB-App repository URL.
+  --base-ref <ref>       Override the pinned base commit, branch, or tag.
   -h, --help             Show this help.
 `);
 }
@@ -90,8 +101,8 @@ function validateSetupConfig(config) {
   if (!config || typeof config !== "object") {
     fail("package.json is missing drawdbDesktopSetup.");
   }
-  if (!config.projectName || !config.baseRepo) {
-    fail("drawdbDesktopSetup requires projectName and baseRepo.");
+  if (!config.projectName || !config.baseRepo || !config.baseRef) {
+    fail("drawdbDesktopSetup requires projectName, baseRepo, and baseRef.");
   }
   if (!Array.isArray(config.npmPackages) || config.npmPackages.length === 0) {
     fail("drawdbDesktopSetup.npmPackages must be a non-empty array.");
@@ -127,9 +138,10 @@ function commandExists(command) {
   return !result.error && result.status === 0;
 }
 
-function ensureBaseCheckout(projectDir, baseRepo) {
+function ensureBaseCheckout(projectDir, baseRepo, baseRef) {
   if (!existsSync(projectDir)) {
     run("git", ["clone", baseRepo, projectDir], { cwd: rootDir });
+    run("git", ["checkout", "--detach", baseRef], { cwd: projectDir });
     return;
   }
 
@@ -151,6 +163,113 @@ function applyOverlay(overlayDir, projectDir) {
     force: true,
     errorOnExist: false,
   });
+}
+
+function applyDesktopIntegration(projectDir) {
+  log("Applying release-critical desktop integration.");
+  if (args.dryRun) {
+    log("DRY RUN: wire the updater into ControlPanel and the upstream EN/JA dictionaries");
+    return;
+  }
+
+  const controlPanel = join(projectDir, "src/components/EditorHeader/ControlPanel.jsx");
+  replaceRequired(
+    controlPanel,
+    'import { useContext, useState } from "react";',
+    'import { useContext, useEffect, useState } from "react";',
+  );
+  replaceRequired(
+    controlPanel,
+    'import { exportSavedData } from "../../utils/exportSavedData";',
+    'import { exportSavedData } from "../../utils/exportSavedData";\n' +
+      'import { checkForAppUpdates } from "../../utils/appUpdates";\n' +
+      'import { setLocale as setDesktopLocale, t as desktopT } from "../../i18n/index.js";',
+  );
+  replaceRequired(
+    controlPanel,
+    `  const navigate = useNavigate();
+
+  const invertLayout = (component) =>`,
+    `  const navigate = useNavigate();
+
+  const [updateProgress, setUpdateProgress] = useState(null);
+  const checkUpdates = (manual = false) => {
+    setDesktopLocale(i18n.language === "jp" ? "ja" : i18n.language);
+    return checkForAppUpdates({ manual, onProgress: setUpdateProgress });
+  };
+
+  useEffect(() => {
+    setDesktopLocale(i18n.language === "jp" ? "ja" : i18n.language);
+    const timer = window.setTimeout(() => {
+      void checkForAppUpdates({ onProgress: setUpdateProgress });
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [i18n.language]);
+
+  const invertLayout = (component) =>`,
+  );
+  replaceRequired(
+    controlPanel,
+    `      exit: {
+        function: () => {
+          save();
+          if (saveState === State.SAVED) navigate("/");
+        },
+      },`,
+    `      check_updates: {
+        function: () => checkUpdates(true),
+      },
+      exit: {
+        function: () => {
+          save();
+          if (saveState === State.SAVED) navigate("/");
+        },
+      },`,
+  );
+  replaceRequired(
+    controlPanel,
+    `      </div>
+      <Modal
+        modal={modal}`,
+    `      </div>
+      {updateProgress?.status === "downloading" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed right-4 top-4 z-[10000] rounded-md bg-gray-900 px-4 py-3 text-sm text-white shadow-lg"
+        >
+          {updateProgress.percent == null
+            ? desktopT("update.downloading")
+            : desktopT("update.downloadingProgress", {
+                percent: updateProgress.percent,
+              })}
+        </div>
+      )}
+      <Modal
+        modal={modal}`,
+  );
+
+  replaceRequired(
+    join(projectDir, "src/i18n/locales/en.js"),
+    '    exit: "Exit",',
+    '    check_updates: "Check for updates...",\n    exit: "Exit",',
+  );
+  replaceRequired(
+    join(projectDir, "src/i18n/locales/jp.js"),
+    '    exit: "終了",',
+    '    check_updates: "更新を確認...",\n    exit: "終了",',
+  );
+}
+
+function replaceRequired(path, before, after) {
+  const source = readFileSync(path, "utf8");
+  if (source.includes(after)) {
+    return;
+  }
+  if (!source.includes(before)) {
+    fail(`Desktop integration anchor not found in ${path}: ${before.slice(0, 80)}`);
+  }
+  writeFileSync(path, source.replace(before, after));
 }
 
 function installFrontend(projectDir) {

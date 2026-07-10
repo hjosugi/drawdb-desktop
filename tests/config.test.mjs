@@ -37,11 +37,22 @@ describe("shipped JSON config", () => {
     expect(() => readJson(path)).not.toThrow();
   });
 
+  it("keeps the Tauri application version aligned across manifests", () => {
+    const version = readJson("overlay/src-tauri/tauri.conf.json").version;
+    const cargoToml = readFileSync("overlay/src-tauri/Cargo.toml", "utf8");
+    const cargoLock = readFileSync("overlay/src-tauri/Cargo.lock", "utf8");
+
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(cargoToml).toContain(`name = "drawdb-desktop"\nversion = "${version}"`);
+    expect(cargoLock).toContain(`name = "drawdb-desktop"\nversion = "${version}"`);
+  });
+
   it("keeps setup dependency lists centralized in package.json", () => {
     const pkg = readJson("package.json");
     const setup = pkg.drawdbDesktopSetup;
 
     expect(setup).toBeTruthy();
+    expect(setup.baseRef).toBe("c80cb68e9d74b783098c47301c76a693615def95");
     expect(setup.npmPackages).toEqual(expect.arrayContaining([
       "jszip",
       "exceljs",
@@ -51,6 +62,8 @@ describe("shipped JSON config", () => {
       "@tauri-apps/plugin-sql@2.4.0",
       "@tauri-apps/plugin-opener@2.5.4",
       "@tauri-apps/plugin-window-state@2.4.1",
+      "@tauri-apps/plugin-process@2.3.1",
+      "@tauri-apps/plugin-updater@2.10.1",
     ]));
     expect(setup.cargoPackages.map((pkg) => pkg.name)).toEqual(expect.arrayContaining([
       "tauri-plugin-fs",
@@ -59,10 +72,16 @@ describe("shipped JSON config", () => {
       "tauri-plugin-sql",
       "tauri-plugin-opener",
       "tauri-plugin-window-state",
+      "tauri-plugin-process",
+      "tauri-plugin-updater",
     ]));
     expect(pkg.scripts.setup).toBe("node scripts/setup.mjs");
     expect(pkg.scripts.cli).toBe("node scripts/drawdb-cli.mjs");
     expect(pkg.bin.drawdb).toBe("./scripts/drawdb-cli.mjs");
+    const setupScript = readFileSync("scripts/setup.mjs", "utf8");
+    expect(setupScript).toContain("applyDesktopIntegration(projectDir)");
+    expect(setupScript).toContain("checkForAppUpdates");
+    expect(setupScript).toContain("check_updates");
   });
 
   it("grants local-history filesystem and opener permissions", () => {
@@ -139,6 +158,24 @@ describe("shipped JSON config", () => {
     expect(readyIndex).toBeGreaterThan(listenIndex);
   });
 
+  it("documents the dirty-close guard for desktop windows", () => {
+    const desktopIO = readFileSync("overlay/src/utils/desktopIO.js", "utf8");
+    const patches = readFileSync("overlay/src/patches/PATCHES_FULL.md", "utf8");
+    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+
+    expect(capabilities.permissions).toEqual(expect.arrayContaining([
+      "core:window:default",
+      "dialog:allow-message",
+    ]));
+    expect(desktopIO).toContain("onCloseRequested");
+    expect(desktopIO).toContain("closeCurrentWindow");
+    expect(desktopIO).toContain("confirmCloseWithUnsavedChanges");
+    expect(desktopIO).toContain("buttons: { yes: save, no: discard, cancel }");
+    expect(patches).toContain("confirmCloseWithUnsavedChanges");
+    expect(patches).toContain("fileSaver.current.flush()");
+    expect(patches).toContain("fileSaver.current.hasPending()");
+  });
+
   it("enables Tauri window state persistence for desktop builds", () => {
     const cargoToml = readFileSync("overlay/src-tauri/Cargo.toml", "utf8");
     const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
@@ -151,6 +188,70 @@ describe("shipped JSON config", () => {
     expect(lib).toContain("tauri_plugin_window_state::StateFlags::SIZE");
     expect(lib).toContain("tauri_plugin_window_state::StateFlags::POSITION");
     expect(lib).toContain("tauri_plugin_window_state::StateFlags::MAXIMIZED");
+  });
+
+  it("configures signed GitHub Releases updater support", () => {
+    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+    const cargoToml = readFileSync("overlay/src-tauri/Cargo.toml", "utf8");
+    const lib = readFileSync("overlay/src-tauri/src/lib.rs", "utf8");
+    const appUpdates = readFileSync("overlay/src/utils/appUpdates.js", "utf8");
+
+    expect(config.bundle.createUpdaterArtifacts).toBe(true);
+    expect(config.plugins.updater).toMatchObject({
+      endpoints: ["https://github.com/hjosugi/drawdb-desktop/releases/latest/download/latest.json"],
+      windows: { installMode: "passive" },
+    });
+    expect(config.plugins.updater.pubkey).toMatch(/^dW50cnVzdGVkIGNvbW1lbnQ6/);
+    expect(config.plugins.updater.pubkey.length).toBeGreaterThan(100);
+    expect(capabilities.permissions).toEqual(expect.arrayContaining([
+      "dialog:allow-ask",
+      "dialog:allow-message",
+      "process:default",
+      "updater:default",
+    ]));
+    expect(cargoToml).toContain("tauri-plugin-process = \"2\"");
+    expect(cargoToml).toContain("tauri-plugin-updater = \"2\"");
+    expect(lib).toContain("tauri_plugin_process::init()");
+    expect(lib).toContain("tauri_plugin_updater::Builder::new().build()");
+    expect(appUpdates).toContain("@tauri-apps/plugin-updater");
+    expect(appUpdates).toContain("downloadAndInstall");
+    expect(appUpdates).toContain("drawdb-update-progress");
+  });
+
+  it("configures conditional OS code signing and macOS notarization inputs", () => {
+    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
+    const windowsSigner = readFileSync("overlay/src-tauri/scripts/sign-windows.ps1", "utf8");
+    const entitlements = readFileSync("overlay/src-tauri/entitlements.plist", "utf8");
+
+    expect(config.bundle.windows).toMatchObject({
+      digestAlgorithm: "sha256",
+      timestampUrl: "http://timestamp.acs.microsoft.com",
+    });
+    expect(config.bundle.windows.signCommand).toMatchObject({
+      cmd: "powershell",
+      args: expect.arrayContaining(["scripts/sign-windows.ps1", "%1"]),
+    });
+    expect(config.bundle.macOS).toMatchObject({
+      hardenedRuntime: true,
+      entitlements: "entitlements.plist",
+    });
+    expect(entitlements).toContain("com.apple.security.cs.allow-jit");
+    expect(windowsSigner).toContain("artifact-signing-cli");
+    expect(windowsSigner).toContain("signtool verify /pa");
+    expect(windowsSigner).toContain("WINDOWS_CERTIFICATE_THUMBPRINT");
+    expect(releaseWorkflow).toContain("cargo install artifact-signing-cli --locked");
+    expect(releaseWorkflow).toContain("AZURE_ARTIFACT_SIGNING_ENDPOINT");
+    expect(releaseWorkflow).toContain("AZURE_ARTIFACT_SIGNING_ACCOUNT");
+    expect(releaseWorkflow).toContain("AZURE_ARTIFACT_SIGNING_CERT_PROFILE");
+    expect(releaseWorkflow).toContain("WINDOWS_CERTIFICATE_THUMBPRINT");
+    expect(releaseWorkflow).toContain("APPLE_CERTIFICATE");
+    expect(releaseWorkflow).toContain("APPLE_SIGNING_IDENTITY");
+    expect(releaseWorkflow).toContain("APPLE_TEAM_ID");
+    expect(releaseWorkflow).toContain("APPLE_API_ISSUER");
+    expect(releaseWorkflow).toContain("APPLE_API_PRIVATE_KEY");
+    expect(releaseWorkflow).toContain("APPLE_API_KEY_PATH");
   });
 
   it("requests every first-party release bundle, including rpm", () => {
@@ -253,9 +354,23 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow).toContain("ubuntu-22.04-arm");
     expect(releaseWorkflow).toContain("windows-11-arm");
     expect(releaseWorkflow).toContain("aarch64-pc-windows-msvc");
+    expect(releaseWorkflow).toContain("tauri-apps/tauri-action@v1");
+    expect(releaseWorkflow).toContain("TAURI_SIGNING_PRIVATE_KEY");
+    expect(releaseWorkflow).toContain("uploadUpdaterJson: true");
+    expect(releaseWorkflow).toContain("updaterJsonPreferNsis: true");
     expect(releaseWorkflow).toContain("*.rpm");
+    expect(releaseWorkflow).toContain("*.sig");
     expect(releaseWorkflow).toContain("rpm xdg-utils");
     expect(releaseWorkflow).toContain("--bundles nsis");
+  });
+
+  it("pins the upstream app revision consistently for CI and releases", () => {
+    const ciWorkflow = readFileSync(".github/workflows/ci.yml", "utf8");
+    const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
+    const baseRevision = "c80cb68e9d74b783098c47301c76a693615def95";
+
+    expect(ciWorkflow).toContain(`ref: ${baseRevision}`);
+    expect(releaseWorkflow.match(new RegExp(baseRevision, "g"))).toHaveLength(2);
   });
 
   it("verifies the Linux x64 RPM artifact in Fedora after the release build", () => {

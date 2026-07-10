@@ -7,7 +7,8 @@ import { useContext, useEffect, useRef } from "react";
 import { FilePathContext } from "../context/FilePathContext";
 import {
   desktopAvailable, writeTextFile, readTextFile, onOpenFile,
-  serializeDdb, parseDdb, makeAutoSaver,
+  serializeDdb, parseDdb, makeAutoSaver, pickSave,
+  onCloseRequested, closeCurrentWindow, confirmCloseWithUnsavedChanges,
 } from "../utils/desktopIO";
 import {
   createHistorySnapshot,
@@ -18,8 +19,10 @@ import {
 import { importFromPack } from "../utils/ddbpack";
 import { importExcelToDiagram } from "../utils/excelIO";
 
-const { path: filePath, kind: fileKind, setFile } = useContext(FilePathContext);
+const filePathCtx = useContext(FilePathContext);
+const { path: filePath, kind: fileKind, dirty } = filePathCtx;
 const lastHistorySnapshotAt = useRef(null);
+const closingRef = useRef(false);
 
 async function snapshotLocalHistory(diagram, reason) {
   if (!filePath || fileKind !== "ddb") return;
@@ -37,12 +40,51 @@ const fileSaver = useRef(makeAutoSaver(async (payload) => {
     await snapshotLocalHistory(payload, "autosave");
   }
   await writeTextFile(filePath, serializeDdb(payload));
+  filePathCtx.setDirty(false);
 }, 800));
 
 // 既存 save() の DB 更新後
 if (desktopAvailable() && filePath && fileKind === "ddb") {
+  filePathCtx.setDirty(true);
   fileSaver.current.schedule(currentDiagram);
 }
+
+async function saveBeforeClose() {
+  if (filePath && fileKind === "ddb") {
+    await fileSaver.current.flush();
+    filePathCtx.setDirty(false);
+    return true;
+  }
+
+  const p = await pickSave(`${currentDiagram.name || "diagram"}.ddb`, "ddb");
+  if (!p) return false;
+  await writeTextFile(p, serializeDdb(currentDiagram));
+  filePathCtx.setFile(p);
+  return true;
+}
+
+useEffect(() => {
+  if (!desktopAvailable()) return;
+  let unlisten = null;
+  (async () => {
+    unlisten = await onCloseRequested(async (event) => {
+      if (closingRef.current) return;
+      if (!dirty && !fileSaver.current.hasPending()) return;
+
+      event.preventDefault();
+      const decision = await confirmCloseWithUnsavedChanges();
+      if (decision === "cancel") return;
+      if (decision === "save") {
+        const saved = await saveBeforeClose();
+        if (!saved) return;
+      }
+
+      closingRef.current = true;
+      await closeCurrentWindow();
+    });
+  })();
+  return () => { try { unlisten && unlisten(); } catch {} };
+}, [currentDiagram, dirty, filePath, fileKind]);
 
 useEffect(() => {
   if (!desktopAvailable()) return;
@@ -76,7 +118,7 @@ useEffect(() => {
             : await db.diagrams.add(row);
           loadDiagram(id);
         }
-        setFile(path);
+        filePathCtx.setFile(path);
       } catch (e) { console.error("open-file failed", e); }
     });
   })();
@@ -91,6 +133,9 @@ useEffect(() => {
 ```
 
 ## ControlPanel.jsx 追加分
+
+更新確認メニュー、起動時チェック、upstream EN/JA のメニュー文言は
+`scripts/setup.mjs` が自動統合するため、以下の手動差分には含めません。
 
 ```jsx
 import {
@@ -228,7 +273,6 @@ function changeLocale(locale) {
   setLocale(locale);
   window.location.reload();
 }
-
 const fileMenuExtras = desktopAvailable() ? {
   [t("menu.openDdb")]: { function: openDdb, shortcut: "Ctrl+O" },
   [t("menu.saveDdb")]: { function: saveDdb, shortcut: "Ctrl+S" },
@@ -246,7 +290,6 @@ const fileMenuExtras = desktopAvailable() ? {
   [t("menu.languageJapanese")]: { function: () => changeLocale("ja") },
 } : {};
 
-// Render near the workspace/control panel root:
 {historyOpen && (
   <HistoryBrowser
     currentDiagram={currentDiagram}

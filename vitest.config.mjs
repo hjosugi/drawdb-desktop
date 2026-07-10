@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.mjs"],
+    // CLI round-trip tests launch multiple Node processes and can exceed
+    // Vitest's 5-second default on cold or contended CI runners.
+    testTimeout: 60_000,
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],

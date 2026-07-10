@@ -1,6 +1,6 @@
 # HANDOVER.md — drawDB Desktop Overlay 引き継ぎログ
 
-最終更新: 2026-06-30 JST
+最終更新: 2026-07-10 JST
 作成元: Copilot (Claude Opus 4.7) との対話
 配布物: drawdb-desktop-overlay-v2 系列
 
@@ -13,8 +13,8 @@ drawDB-io/drawdb を Tauri 2.0 でデスクトップアプリ化した khsuzan/d
 
 ### ライセンス
 - ベース drawDB: AGPL-3.0
-- 本オーバーレイ: 同じく AGPL-3.0 で公開すること
-- 再配布時は派生ソース公開義務あり（社内利用なら不要）
+- 本オーバーレイ単体: 0BSD
+- ベースと組み合わせた配布物は drawDB 側の AGPL-3.0 条件にも従う
 
 ### スタック
 | レイヤ | 採用 |
@@ -62,8 +62,9 @@ drawDB-io/drawdb を Tauri 2.0 でデスクトップアプリ化した khsuzan/d
 | F16 | アイコン一式生成（T4） | scripts/generate_icons.py | 生成・検証済（png/ico/icns） |
 | F17 | クロスプラットフォーム CI/CD（T5） | .github/workflows/{ci,release}.yml | YAML 検証済 |
 | F18 | EN/JA i18n（T7） | src/i18n + desktop menu/dialog/error labels | Node smoke pass |
+| F19 | 自動アップデータ（T9） | src-tauri config + utils/appUpdates.js + release.yml | 実装済、旧版→新版の3OS実機検証は #2 |
 
-### v2.1 で完了したタスク（旧タスクリストより）
+### v2 系列で完了したタスク（旧タスクリストより）
 - **T4 アイコン生成** … `scripts/generate_icons.py`（Pillow）。ソース PNG 省略時は既定の
   drawDB ER 図アイコンを描画。`png/ico/icns` + Windows Store ロゴを `overlay/src-tauri/icons` に出力。
 - **T5 GitHub Actions** … `ci.yml`（設定検証 + SQL/Excel スモーク + アイコン生成）と
@@ -74,6 +75,11 @@ drawDB-io/drawdb を Tauri 2.0 でデスクトップアプリ化した khsuzan/d
   オートフィルタ、ウィンドウ枠固定、ゼブラ。`buildWorkbook`/`workbookToDiagram` に分離し CI でテスト可能化。
 - **T7 EN/JA i18n** … `src/i18n` に英日辞書と `t()`/locale helper を追加。desktop overlay の
   File メニュー、ファイルダイアログ、エラー文言を英日切替対応。未対応言語は英語へフォールバック。
+- **T9 自動アップデータ** … `tauri-plugin-updater` / `@tauri-apps/plugin-updater` を追加。
+  GitHub Releases の `latest.json` を endpoint にし、`createUpdaterArtifacts`、updater/process
+  capability、更新確認メニュー、起動時チェック、ダウンロード進捗イベント、再起動確認を実装。
+  release workflow は `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+  Secrets で署名し、`latest.json` をアップロードする。
 
 #### スモークテスト（`npm test`）
 - `tests/smoke.mjs` … Oracle / MySQL / PostgreSQL の export と round-trip（PG は ENUM/SERIAL/NUMERIC まで検証）。
@@ -193,11 +199,11 @@ npm run tauri build
 
 ### 6-5. 成果物
 ```
-src-tauri\target\release\bundle\nsis\drawDB_1.7.0_x64-setup.exe
-src-tauri\target\release\bundle\msi\drawDB_1.7.0_x64_en-US.msi
-src-tauri\target\release\bundle\deb\drawDB_1.7.0_amd64.deb
-src-tauri\target\release\bundle\appimage\drawDB_1.7.0_amd64.AppImage
-src-tauri\target\release\bundle\dmg\drawDB_1.7.0_x64.dmg
+src-tauri\target\release\bundle\nsis\drawDB_1.8.0_x64-setup.exe
+src-tauri\target\release\bundle\msi\drawDB_1.8.0_x64_en-US.msi
+src-tauri\target\release\bundle\deb\drawDB_1.8.0_amd64.deb
+src-tauri\target\release\bundle\appimage\drawDB_1.8.0_amd64.AppImage
+src-tauri\target\release\bundle\dmg\drawDB_1.8.0_x64.dmg
 ```
 
 ---
@@ -237,8 +243,11 @@ Tauri の fileAssociations は、Win/Linux で tauri-plugin-deep-link の onOpen
 - 100万行のExcelでも 500ms 以内で完了
 - 全数走査だと WebView が固まる
 
-### 8-6. なぜ SmartScreen 警告対策を含めなかったか
-コード署名証明書（DigiCert/SSL.com で $200〜$700/年）が必要で、鍵を作れる立場でないとこのチャットでは完結不可。タスクリスト T1〜T3 として残置。
+### 8-6. SmartScreen / Gatekeeper 警告対策の状態
+Release workflow は Windows Authenticode / Azure Artifact Signing と macOS Developer ID
+署名 + notarization のフックを持つ。実際に警告を消すには、maintainer が Azure
+Artifact Signing または OV/EV 証明書、Apple Developer Program、Developer ID
+Application 証明書を用意し、GitHub Actions Secrets を設定したうえで実機検証する。
 
 ---
 
@@ -246,15 +255,15 @@ Tauri の fileAssociations は、Win/Linux で tauri-plugin-deep-link の onOpen
 
 | # | タスク | 完了基準 | 推定工数 | 必要な前提 |
 |---|---|---|---|---|
-| T1 | Authenticode 証明書取得 | signtool verify /pa 成功 | 数日〜2週 | 法人名義 + $200〜/年 |
-| T2 | EV 証明書取得 (SmartScreen即解消) | 同上 + 即時白Reputation | 1〜2週 | 法人 + $700〜/年 + HSM |
-| T3 | macOS Notarization | xcrun notarytool 成功 | 2h | Apple Dev Program $99/年 |
+| T1 | Authenticode / Azure Artifact Signing 証明書設定 | signtool verify /pa 成功 | 数日〜2週 | Azure Artifact Signing または OV/EV 証明書 |
+| T2 | SmartScreen reputation 確認 | 署名済み installer で不明な発行元警告なし | 1〜2週 | 証明書 reputation または Azure Artifact Signing |
+| T3 | macOS Notarization | xcrun notarytool / stapler 成功 | 2h | Apple Dev Program $99/年 |
 | ~~T4~~ | ✅ **完了** アイコン .ico/.icns/.png 一式 | `scripts/generate_icons.py` で生成・検証済 | — | — |
 | ~~T5~~ | ✅ **完了** GitHub Actions CI/CD (tauri-action) | `.github/workflows/{ci,release}.yml` | — | Release は Secrets/署名のみ別途 |
 | ~~T6~~ | ✅ **完了** PostgreSQL ダイアレクト | `postgres.js` export+import, round-trip 検証済（SQL Server は未対応として残置） | — | — |
 | ~~T7~~ | ✅ **完了** EN/JA i18n | desktop overlay のメニュー/ダイアログ/エラー文言を英日対応 | — | — |
 | ~~T8~~ | ✅ **完了** Excel 書式付き出力 (色/罫線/AutoFilter) | `excelIO.js` を exceljs 化, 枠固定/ゼブラ含む | — | — |
-| T9 | 自動アップデータ (tauri-plugin-updater) | 起動時に新版検出 | 2h | 配信エンドポイント (GitHub Releases) + ed25519 鍵 |
+| T9 | 🟡 **実装完了・実機検証待ち** 自動アップデータ (tauri-plugin-updater) | 起動時/手動で新版検出、署名付き更新適用 | — | GitHub Secrets 登録済、旧版→新版の3OS検証は #2 で実施 |
 | T10 | Sentry クラッシュ報告 | DSN 設定済み | 1h | Sentry プロジェクト |
 | T11 | Dexie → SQLite 完全移行スクリプト | 起動時1回マイグレーション | 半日 | sqlBackend.js を full path 化 |
 | T12 | Oracle View/Trigger/Sequence パーサ | 主要DDL網羅 | 1日 | 要件確認 |
@@ -333,6 +342,7 @@ Tauri の fileAssociations は、Win/Linux で tauri-plugin-deep-link の onOpen
 | v2.0+HANDOVER | 2026-06-30 07:30 | 引き継ぎログ追加 |
 | v2.1 | 2026-06-30 | T4 アイコン生成 / T5 CI・CD / T6 PostgreSQL / T8 Excel 書式 を実装。`npm test` でスモーク検証。リポジトリ化（package.json + .gitignore + tests/）。 |
 | v2.2 | 2026-06-30 | T7 EN/JA i18n、極小README、setup依存更新（exceljs/jszip/@tauri-apps/api）を追加。 |
+| v2.3 | 2026-07-10 | app v1.8.0。署名付き updater、自動 UI 統合、OS 署名フック、close guard 基盤、再現可能な upstream pin を追加。 |
 
 ---
 

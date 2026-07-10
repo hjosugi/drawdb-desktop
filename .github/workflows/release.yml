@@ -25,8 +25,8 @@ on:
         description: "Base drawDB-App repo (owner/name)"
         default: "khsuzan/drawDB-App"
       base_ref:
-        description: "Base repo branch or tag"
-        default: "main"
+        description: "Base repo commit, branch, or tag"
+        default: "c80cb68e9d74b783098c47301c76a693615def95"
 
 permissions:
   contents: write
@@ -56,7 +56,7 @@ jobs:
         shell: bash
         run: |
           echo "BASE_REPO=${{ github.event.inputs.base_repo || 'khsuzan/drawDB-App' }}" >> "$GITHUB_ENV"
-          echo "BASE_REF=${{ github.event.inputs.base_ref || 'main' }}" >> "$GITHUB_ENV"
+          echo "BASE_REF=${{ github.event.inputs.base_ref || 'c80cb68e9d74b783098c47301c76a693615def95' }}" >> "$GITHUB_ENV"
 
       - name: Checkout base drawDB-App
         uses: actions/checkout@v4
@@ -101,16 +101,88 @@ jobs:
           python -m pip install --quiet pillow
           python overlay-src/scripts/generate_icons.py -o app/src-tauri/icons
 
+      - name: Prepare App Store Connect API key
+        if: startsWith(matrix.os, 'macos-')
+        shell: bash
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${APPLE_API_PRIVATE_KEY}" ]]; then
+            echo "No App Store Connect API private key configured; Apple ID credentials may still be used."
+            exit 0
+          fi
+          if [[ -z "${APPLE_API_KEY}" ]]; then
+            echo "APPLE_API_PRIVATE_KEY is set but APPLE_API_KEY is missing."
+            exit 1
+          fi
+
+          api_key_path="${RUNNER_TEMP}/AuthKey_${APPLE_API_KEY}.p8"
+          printf '%s' "${APPLE_API_PRIVATE_KEY}" > "${api_key_path}"
+          chmod 600 "${api_key_path}"
+          echo "APPLE_API_KEY_PATH=${api_key_path}" >> "${GITHUB_ENV}"
+
+      - name: Prepare Windows Artifact Signing
+        if: startsWith(matrix.os, 'windows-')
+        shell: pwsh
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_ARTIFACT_SIGNING_ENDPOINT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          AZURE_ARTIFACT_SIGNING_ACCOUNT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ACCOUNT }}
+          AZURE_ARTIFACT_SIGNING_CERT_PROFILE: ${{ secrets.AZURE_ARTIFACT_SIGNING_CERT_PROFILE }}
+        run: |
+          $required = @(
+            "AZURE_CLIENT_ID",
+            "AZURE_TENANT_ID",
+            "AZURE_CLIENT_SECRET",
+            "AZURE_ARTIFACT_SIGNING_ENDPOINT",
+            "AZURE_ARTIFACT_SIGNING_ACCOUNT",
+            "AZURE_ARTIFACT_SIGNING_CERT_PROFILE"
+          )
+          $missing = $required | Where-Object {
+            [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_))
+          }
+          if ($missing.Count -gt 0) {
+            "Windows Artifact Signing secrets missing; Windows bundles will remain unsigned."
+            exit 0
+          }
+
+          cargo install artifact-signing-cli --locked
+          artifact-signing-cli --version
+
       - name: Build app and (on tag) publish release
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_ARTIFACT_SIGNING_ENDPOINT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          AZURE_ARTIFACT_SIGNING_ACCOUNT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ACCOUNT }}
+          AZURE_ARTIFACT_SIGNING_CERT_PROFILE: ${{ secrets.AZURE_ARTIFACT_SIGNING_CERT_PROFILE }}
+          WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+          WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
         with:
           projectPath: app
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           releaseName: "drawDB Desktop ${{ github.ref_name }}"
           releaseDraft: true
           releaseBody: "Automated cross-platform build. See HANDOVER.md."
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
 
       - name: Upload bundles as workflow artifacts
@@ -126,6 +198,10 @@ jobs:
             app/src-tauri/target/**/release/bundle/**/*.rpm
             app/src-tauri/target/**/release/bundle/**/*.exe
             app/src-tauri/target/**/release/bundle/**/*.msi
+            app/src-tauri/target/**/release/bundle/**/*.sig
+            app/src-tauri/target/**/release/bundle/**/*.tar.gz
+            app/src-tauri/target/**/release/bundle/**/*.zip
+            app/src-tauri/target/**/release/bundle/**/latest.json
           if-no-files-found: ignore
           retention-days: 14
 

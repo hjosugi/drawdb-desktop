@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeShopDiagram } from "./fixtures/shopDiagram.mjs";
-import { serializeDdb, stableStringify } from "../overlay/src/utils/desktopIO.js";
+import { makeAutoSaver, serializeDdb, stableStringify } from "../overlay/src/utils/desktopIO.js";
 import {
   createHistorySnapshot,
   gzipText,
@@ -171,5 +171,57 @@ describe("stable .ddb JSON", () => {
 
   it("sorts object keys recursively", () => {
     expect(stableStringify({ z: 1, a: { y: 2, b: 3 } }, 0)).toBe('{"a":{"b":3,"y":2},"z":1}');
+  });
+});
+
+describe("desktop autosaver", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("flush waits for in-flight and queued writes", async () => {
+    vi.useFakeTimers();
+    const writes = [];
+    let releaseFirst;
+    const saver = makeAutoSaver(async (value) => {
+      writes.push(value);
+      if (value === "first") {
+        await new Promise((resolve) => {
+          releaseFirst = resolve;
+        });
+      }
+    }, 10);
+
+    saver.schedule("first");
+    await vi.advanceTimersByTimeAsync(10);
+    saver.schedule("second");
+
+    const flushed = saver.flush();
+    expect(saver.hasPending()).toBe(true);
+    releaseFirst();
+    await flushed;
+
+    expect(writes).toEqual(["first", "second"]);
+    expect(saver.hasPending()).toBe(false);
+  });
+
+  it("flush reports a failed write instead of allowing a silent close", async () => {
+    vi.useFakeTimers();
+    const error = new Error("disk full");
+    const writer = vi.fn()
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce(undefined);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const saver = makeAutoSaver(writer, 10);
+
+    saver.schedule("first");
+    await vi.advanceTimersByTimeAsync(10);
+    await expect(saver.flush()).rejects.toBe(error);
+
+    saver.schedule("second");
+    await expect(saver.flush()).resolves.toBeUndefined();
+    expect(writer).toHaveBeenCalledTimes(2);
+    expect(consoleError).toHaveBeenCalledWith("autoSaver:", error);
   });
 });

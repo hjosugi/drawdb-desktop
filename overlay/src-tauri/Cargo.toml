@@ -1,6 +1,6 @@
 [package]
 name = "drawdb-desktop"
-version = "1.7.0"
+version = "1.8.0"
 description = "drawDB Desktop Edition"
 authors = ["drawDB"]
 edition = "2021"
@@ -25,6 +25,8 @@ serde_json = "1"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-single-instance = "2"
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 
 [profile.release]
