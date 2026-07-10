@@ -269,6 +269,7 @@ describe("shipped JSON config", () => {
       "deb",
       "rpm",
       "appimage",
+      "app",
       "dmg",
     ]));
     expect(config.bundle.license).toBe("AGPL-3.0");

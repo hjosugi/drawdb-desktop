@@ -34,6 +34,7 @@
       "deb",
       "rpm",
       "appimage",
+      "app",
       "dmg"
     ],
     "category": "DeveloperTool",
