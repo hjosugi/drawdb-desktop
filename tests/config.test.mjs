@@ -80,6 +80,8 @@ describe("shipped JSON config", () => {
     expect(pkg.bin.drawdb).toBe("./scripts/drawdb-cli.mjs");
     const setupScript = readFileSync("scripts/setup.mjs", "utf8");
     expect(setupScript).toContain("applyDesktopIntegration(projectDir)");
+    expect(setupScript).toContain('source.replace(/\\r\\n/g, "\\n")');
+    expect(setupScript).toContain('lineEnding === "\\r\\n"');
     expect(setupScript).toContain("checkForAppUpdates");
     expect(setupScript).toContain("check_updates");
   });

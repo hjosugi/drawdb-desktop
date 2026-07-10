@@ -36,6 +36,10 @@ function main() {
   ensureBaseCheckout(projectDir, baseRepo, baseRef);
   applyOverlay(overlayDir, projectDir);
   applyDesktopIntegration(projectDir);
+  if (args.skipInstall) {
+    log("Skipping dependency installation as requested.");
+    return;
+  }
   installFrontend(projectDir);
   installRustPlugins(join(projectDir, "src-tauri"));
 
@@ -46,6 +50,7 @@ function main() {
 function parseArgs(rawArgs) {
   const parsed = {
     dryRun: false,
+    skipInstall: false,
     projectDir: undefined,
     baseRepo: undefined,
     baseRef: undefined,
@@ -54,6 +59,8 @@ function parseArgs(rawArgs) {
     const arg = rawArgs[i];
     if (arg === "--dry-run") {
       parsed.dryRun = true;
+    } else if (arg === "--skip-install") {
+      parsed.skipInstall = true;
     } else if (arg === "--project-dir") {
       parsed.projectDir = readValue(rawArgs, ++i, arg);
     } else if (arg === "--base-repo") {
@@ -83,6 +90,7 @@ function printHelp() {
 
 Options:
   --dry-run              Print setup steps without cloning or installing.
+  --skip-install         Apply overlay and integrations without installing dependencies.
   --project-dir <path>   Override the target checkout directory.
   --base-repo <url>      Override the base drawDB-App repository URL.
   --base-ref <ref>       Override the pinned base commit, branch, or tag.
@@ -263,13 +271,20 @@ function applyDesktopIntegration(projectDir) {
 
 function replaceRequired(path, before, after) {
   const source = readFileSync(path, "utf8");
-  if (source.includes(after)) {
+  const lineEnding = source.includes("\r\n") ? "\r\n" : "\n";
+  const normalizedSource = source.replace(/\r\n/g, "\n");
+  const normalizedBefore = before.replace(/\r\n/g, "\n");
+  const normalizedAfter = after.replace(/\r\n/g, "\n");
+
+  if (normalizedSource.includes(normalizedAfter)) {
     return;
   }
-  if (!source.includes(before)) {
+  if (!normalizedSource.includes(normalizedBefore)) {
     fail(`Desktop integration anchor not found in ${path}: ${before.slice(0, 80)}`);
   }
-  writeFileSync(path, source.replace(before, after));
+
+  const replaced = normalizedSource.replace(normalizedBefore, normalizedAfter);
+  writeFileSync(path, lineEnding === "\r\n" ? replaced.replace(/\n/g, "\r\n") : replaced);
 }
 
 function installFrontend(projectDir) {

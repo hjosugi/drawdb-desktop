@@ -75,6 +75,14 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Checkout base drawDB-App for Windows integration smoke
+        if: runner.os == 'Windows'
+        uses: actions/checkout@v7
+        with:
+          repository: khsuzan/drawDB-App
+          ref: c80cb68e9d74b783098c47301c76a693615def95
+          path: integration-smoke-app
+
       - name: Verify setup wrapper (Unix)
         if: runner.os != 'Windows'
         run: ./setup.sh --dry-run
@@ -83,6 +91,11 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: .\setup.ps1 --dry-run
+
+      - name: Verify Windows checkout integration
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: node scripts/setup.mjs --project-dir integration-smoke-app --skip-install
 
   tauri-rust:
     name: Tauri overlay Rust gate (${{ matrix.os }})
