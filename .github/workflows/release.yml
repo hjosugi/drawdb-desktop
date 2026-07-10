@@ -101,27 +101,69 @@ jobs:
           python -m pip install --quiet pillow
           python overlay-src/scripts/generate_icons.py -o app/src-tauri/icons
 
-      - name: Prepare App Store Connect API key
+      - name: Prepare macOS signing and notarization environment
         if: startsWith(matrix.os, 'macos-')
         shell: bash
         env:
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+          SIGNING_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          NOTARY_APPLE_ID: ${{ secrets.APPLE_ID }}
+          NOTARY_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          NOTARY_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          NOTARY_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          NOTARY_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          NOTARY_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          if [[ -z "${APPLE_API_PRIVATE_KEY}" ]]; then
-            echo "No App Store Connect API private key configured; Apple ID credentials may still be used."
-            exit 0
-          fi
-          if [[ -z "${APPLE_API_KEY}" ]]; then
-            echo "APPLE_API_PRIVATE_KEY is set but APPLE_API_KEY is missing."
-            exit 1
+
+          persist_env() {
+            local name="$1"
+            local value="$2"
+            local delimiter="DRAWDB_${name}_EOF"
+            if [[ -n "${value}" ]]; then
+              {
+                echo "${name}<<${delimiter}"
+                printf '%s\n' "${value}"
+                echo "${delimiter}"
+              } >> "${GITHUB_ENV}"
+            fi
+          }
+
+          if [[ -n "${SIGNING_CERTIFICATE}" || -n "${SIGNING_CERTIFICATE_PASSWORD}" ]]; then
+            if [[ -z "${SIGNING_CERTIFICATE}" || -z "${SIGNING_CERTIFICATE_PASSWORD}" ]]; then
+              echo "APPLE_CERTIFICATE and APPLE_CERTIFICATE_PASSWORD must be configured together."
+              exit 1
+            fi
+            persist_env APPLE_CERTIFICATE "${SIGNING_CERTIFICATE}"
+            persist_env APPLE_CERTIFICATE_PASSWORD "${SIGNING_CERTIFICATE_PASSWORD}"
+            persist_env APPLE_SIGNING_IDENTITY "${SIGNING_IDENTITY}"
+          else
+            echo "No Apple signing certificate configured; macOS bundles will use Tauri's unsigned/ad-hoc path."
           fi
 
-          api_key_path="${RUNNER_TEMP}/AuthKey_${APPLE_API_KEY}.p8"
-          printf '%s' "${APPLE_API_PRIVATE_KEY}" > "${api_key_path}"
-          chmod 600 "${api_key_path}"
-          echo "APPLE_API_KEY_PATH=${api_key_path}" >> "${GITHUB_ENV}"
+          if [[ -n "${NOTARY_APPLE_ID}" || -n "${NOTARY_APPLE_PASSWORD}" || -n "${NOTARY_TEAM_ID}" ]]; then
+            if [[ -z "${NOTARY_APPLE_ID}" || -z "${NOTARY_APPLE_PASSWORD}" || -z "${NOTARY_TEAM_ID}" ]]; then
+              echo "APPLE_ID, APPLE_PASSWORD, and APPLE_TEAM_ID must be configured together."
+              exit 1
+            fi
+            persist_env APPLE_ID "${NOTARY_APPLE_ID}"
+            persist_env APPLE_PASSWORD "${NOTARY_APPLE_PASSWORD}"
+            persist_env APPLE_TEAM_ID "${NOTARY_TEAM_ID}"
+          fi
+
+          if [[ -n "${NOTARY_API_ISSUER}" || -n "${NOTARY_API_KEY}" || -n "${NOTARY_API_PRIVATE_KEY}" ]]; then
+            if [[ -z "${NOTARY_API_ISSUER}" || -z "${NOTARY_API_KEY}" || -z "${NOTARY_API_PRIVATE_KEY}" ]]; then
+              echo "APPLE_API_ISSUER, APPLE_API_KEY, and APPLE_API_PRIVATE_KEY must be configured together."
+              exit 1
+            fi
+            api_key_path="${RUNNER_TEMP}/AuthKey_${NOTARY_API_KEY}.p8"
+            printf '%s' "${NOTARY_API_PRIVATE_KEY}" > "${api_key_path}"
+            chmod 600 "${api_key_path}"
+            persist_env APPLE_API_ISSUER "${NOTARY_API_ISSUER}"
+            persist_env APPLE_API_KEY "${NOTARY_API_KEY}"
+            persist_env APPLE_API_KEY_PATH "${api_key_path}"
+          fi
 
       - name: Prepare Windows Artifact Signing
         if: startsWith(matrix.os, 'windows-')
@@ -167,17 +209,12 @@ jobs:
           AZURE_ARTIFACT_SIGNING_CERT_PROFILE: ${{ secrets.AZURE_ARTIFACT_SIGNING_CERT_PROFILE }}
           WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
           WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
         with:
           projectPath: app
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          # GitHub ignores this when the pushed tag already exists. Using the default
+          # branch avoids GitHub App restrictions on release targets behind main.
+          releaseCommitish: ${{ github.event.repository.default_branch }}
           releaseName: "drawDB Desktop ${{ github.ref_name }}"
           releaseDraft: true
           releaseBody: "Automated cross-platform build. See HANDOVER.md."

@@ -254,6 +254,10 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow).toContain("APPLE_API_ISSUER");
     expect(releaseWorkflow).toContain("APPLE_API_PRIVATE_KEY");
     expect(releaseWorkflow).toContain("APPLE_API_KEY_PATH");
+    expect(releaseWorkflow).toContain("persist_env APPLE_CERTIFICATE");
+    expect(releaseWorkflow).not.toContain(
+      "          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}",
+    );
   });
 
   it("requests every first-party release bundle, including rpm", () => {
@@ -360,6 +364,9 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow).toContain("TAURI_SIGNING_PRIVATE_KEY");
     expect(releaseWorkflow).toContain("uploadUpdaterJson: true");
     expect(releaseWorkflow).toContain("updaterJsonPreferNsis: true");
+    expect(releaseWorkflow).toContain(
+      "releaseCommitish: ${{ github.event.repository.default_branch }}",
+    );
     expect(releaseWorkflow).toContain("*.rpm");
     expect(releaseWorkflow).toContain("*.sig");
     expect(releaseWorkflow).toContain("rpm xdg-utils");
