@@ -1,16 +1,21 @@
 {
-  "name": "drawdb-desktop-overlay",
-  "version": "2.3.0",
+  "name": "drawdb-desktop",
   "private": true,
+  "version": "1.8.0",
   "type": "module",
-  "description": "Desktop overlay for drawDB-App: .ddb/.ddbpack file storage, Excel I/O, and Oracle/MySQL/PostgreSQL SQL dialects for Tauri.",
-  "license": "0BSD",
+  "description": "Integrated Tauri desktop edition of drawDB",
+  "license": "AGPL-3.0-only",
   "bin": {
     "drawdb": "./scripts/drawdb-cli.mjs"
   },
   "scripts": {
-    "setup": "node scripts/setup.mjs",
-    "setup:dry-run": "node scripts/setup.mjs --dry-run",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
     "cli": "node scripts/drawdb-cli.mjs",
     "test": "vitest run --coverage",
     "test:unit": "vitest run",
@@ -21,58 +26,77 @@
     "test:excel": "vitest run tests/excel.test.mjs",
     "icons": "python3 scripts/generate_icons.py"
   },
-  "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.9",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "@dbml/core": "^3.13.9",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@douyinfe/semi-icons": "^2.77.1",
+    "@douyinfe/semi-ui": "^2.77.1",
+    "@fortawesome/fontawesome-free": "6.5.2",
+    "@lexical/react": "^0.12.5",
+    "@monaco-editor/react": "^4.7.0",
+    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-dialog": "2.7.1",
+    "@tauri-apps/plugin-fs": "2.5.1",
+    "@tauri-apps/plugin-opener": "2.5.4",
+    "@tauri-apps/plugin-process": "2.3.1",
+    "@tauri-apps/plugin-sql": "2.4.0",
+    "@tauri-apps/plugin-updater": "2.10.1",
+    "@tauri-apps/plugin-window-state": "2.4.1",
+    "axios": "^1.16.0",
+    "bootstrap-icons": "1.11.3",
+    "dexie": "^3.2.4",
+    "dexie-react-hooks": "^1.1.7",
     "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
+    "framer-motion": "^10.18.0",
+    "html-to-image": "1.11.11",
+    "i18next": "^23.11.4",
+    "i18next-browser-languagedetector": "^8.0.0",
+    "jsonschema": "^1.4.1",
+    "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
+    "lexical": "^0.12.5",
+    "lodash": "^4.18.1",
+    "luxon": "^3.7.1",
+    "nanoid": "^5.1.5",
+    "node-sql-parser": "^5.4.0",
+    "oracle-sql-parser": "^0.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hotkeys-hook": "^4.4.1",
+    "react-i18next": "^14.1.1",
+    "react-router-dom": "^6.30.4",
+    "react-tweet": "^3.3.1",
+    "usehooks-ts": "^3.1.0",
+    "uuid": "^14.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.14",
+    "@tauri-apps/cli": "2.11.4",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.5.14",
+    "prettier": "3.2.5",
+    "tailwindcss": "^4.0.14",
+    "vite": "^8.1.0",
     "vitest": "^4.1.9"
   },
-  "drawdbDesktopSetup": {
-    "projectName": "drawDB-Desktop",
-    "baseRepo": "https://github.com/khsuzan/drawDB-App.git",
-    "baseRef": "c80cb68e9d74b783098c47301c76a693615def95",
-    "npmPackages": [
-      "jszip",
-      "exceljs",
-      "@tauri-apps/cli@2.11.4",
-      "@tauri-apps/api@2.11.1",
-      "@tauri-apps/plugin-fs@2.5.1",
-      "@tauri-apps/plugin-dialog@2.7.1",
-      "@tauri-apps/plugin-sql@2.4.0",
-      "@tauri-apps/plugin-opener@2.5.4",
-      "@tauri-apps/plugin-window-state@2.4.1",
-      "@tauri-apps/plugin-process@2.3.1",
-      "@tauri-apps/plugin-updater@2.10.1"
-    ],
-    "cargoPackages": [
-      {
-        "name": "tauri-plugin-fs"
-      },
-      {
-        "name": "tauri-plugin-dialog"
-      },
-      {
-        "name": "tauri-plugin-single-instance"
-      },
-      {
-        "name": "tauri-plugin-sql",
-        "args": [
-          "--features",
-          "sqlite"
-        ]
-      },
-      {
-        "name": "tauri-plugin-opener"
-      },
-      {
-        "name": "tauri-plugin-process"
-      },
-      {
-        "name": "tauri-plugin-updater"
-      },
-      {
-        "name": "tauri-plugin-window-state"
-      }
-    ]
+  "overrides": {
+    "dompurify": "3.4.11",
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
   }
 }

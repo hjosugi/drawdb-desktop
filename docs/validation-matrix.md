@@ -30,8 +30,14 @@ For each target that requires manual release validation, record results in issue
 - Launch and new diagram creation.
 - `.ddb` save and open through the dialog.
 - `.ddbpack` save and open.
-- `.ddb` and `.ddbpack` double-click association from installed `.deb` and
-  `.rpm` packages when the app is closed and already running.
+- `.ddb`, `.ddbpack`, and `.xlsx` double-click association from installed
+  `.deb` and `.rpm` packages when the app is closed and already running.
+- On both Intel and Apple Silicon macOS, open `.ddb` and `.xlsx` with the app
+  not running, open another file while it is running, and drop each format onto
+  the Dock icon. Confirm the generated app bundle lists all three supported
+  extensions (`ddb`, `ddbpack`, and `xlsx`) in `CFBundleDocumentTypes`.
+- Exercise the Save / Discard / Cancel close guard immediately after an edit
+  through both the window close control and application-level Quit / Cmd+Q.
 - On Linux, confirm `xdg-mime query default application/x-drawdb` and
   `xdg-mime query default application/x-drawdbpack` return `drawDB.desktop`,
   and confirm `/usr/share/applications/drawDB.desktop` keeps `%F` in `Exec=`.
@@ -44,6 +50,8 @@ For each target that requires manual release validation, record results in issue
 - SQL export for Oracle, MySQL, and PostgreSQL.
 - EN/JA switching and Japanese IME input.
 - Autosave restore.
+- Install a previous release and verify updater detection, signature validation,
+  download progress, install, pre-restart file flush, and relaunch.
 - HiDPI or 150% scaling display.
 
 ## Deferred channels

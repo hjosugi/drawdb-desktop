@@ -22,7 +22,7 @@ the same subcommands as `drawdb export`, `drawdb import`, and `drawdb validate`.
 | Direction | Format | Notes |
 | --- | --- | --- |
 | `.ddb` to SQL | `--to sql` | Requires `--dialect mysql`, `--dialect oracle`, or `--dialect postgres`. |
-| `.ddb` to Excel | `--to xlsx` | Uses the styled workbook builder from `overlay/src/utils/excel/build.js`. |
+| `.ddb` to Excel | `--to xlsx` | Uses the styled workbook builder from `src/utils/excel/build.js`. |
 | SQL to `.ddb` | `--from sql` | Requires a SQL dialect; imports the supported DDL subset used by the existing SQL tests. |
 | Excel to `.ddb` | `--from xlsx` | Uses workbook parsing and the 500-row type inference sample limit. |
 | `.ddb` validation | `validate` | Checks table/field shape and relationship references. |

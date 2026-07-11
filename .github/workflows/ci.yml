@@ -19,9 +19,13 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 20
+          cache: npm
 
-      - name: Install dev dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Run Vitest coverage suite
         run: npm test
@@ -45,6 +49,30 @@ jobs:
           console.log(rows);
           NODE
 
+  frontend:
+    name: Integrated frontend (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint integrated source
+        run: npm run lint
+
+      - name: Build integrated frontend
+        run: npm run build
+
   icons:
     name: Icon generator runs
     runs-on: ubuntu-latest
@@ -59,46 +87,8 @@ jobs:
           python scripts/generate_icons.py -o /tmp/icons
           ls -la /tmp/icons
 
-  setup:
-    name: Setup wrapper dry run (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Checkout base drawDB-App for Windows integration smoke
-        if: runner.os == 'Windows'
-        uses: actions/checkout@v7
-        with:
-          repository: khsuzan/drawDB-App
-          ref: c80cb68e9d74b783098c47301c76a693615def95
-          path: integration-smoke-app
-
-      - name: Verify setup wrapper (Unix)
-        if: runner.os != 'Windows'
-        run: ./setup.sh --dry-run
-
-      - name: Verify setup wrapper (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: .\setup.ps1 --dry-run
-
-      - name: Verify Windows checkout integration
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: node scripts/setup.mjs --project-dir integration-smoke-app --skip-install
-
   tauri-rust:
-    name: Tauri overlay Rust gate (${{ matrix.os }})
+    name: Tauri Rust gate (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -121,47 +111,16 @@ jobs:
 
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./overlay/src-tauri -> target"
+          workspaces: "./src-tauri -> target"
 
       - name: Check Rust formatting
-        run: cargo fmt --manifest-path overlay/src-tauri/Cargo.toml -- --check
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 
-      - name: Check Tauri overlay crate
-        run: cargo check --manifest-path overlay/src-tauri/Cargo.toml --locked
+      - name: Check Tauri crate
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
 
       - name: Run Clippy
-        run: cargo clippy --manifest-path overlay/src-tauri/Cargo.toml --locked --all-targets --all-features -- -D warnings
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets --all-features -- -D warnings
 
-  overlay-build:
-    name: Overlay-applied frontend build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout overlay
-        uses: actions/checkout@v7
-        with:
-          path: overlay-src
-
-      - name: Checkout base drawDB-App
-        uses: actions/checkout@v7
-        with:
-          repository: khsuzan/drawDB-App
-          # Keep overlay validation reproducible and aligned with release.yml.
-          ref: c80cb68e9d74b783098c47301c76a693615def95
-          path: app
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 20
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Apply overlay and install dependencies
-        run: node overlay-src/scripts/setup.mjs --project-dir ../app
-
-      - name: Lint integrated frontend
-        working-directory: app
-        run: npm run lint
-
-      - name: Build frontend
-        working-directory: app
-        run: npm run build
+      - name: Run Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked

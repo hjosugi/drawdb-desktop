@@ -1,0 +1,58 @@
+import JSZip from "jszip";
+import { db } from "../data/db";
+import { readBinaryFile, writeBinaryFile, serializeDdb, parseDdb } from "./desktopIO";
+import { t } from "../i18n/index.js";
+import { upsertDdbDiagram } from "../desktop/diagram.js";
+
+const MANIFEST = "manifest.json";
+const sanitize = (s) => (s || "untitled").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
+
+export async function exportAllToPack(path) {
+  const zip = new JSZip();
+  const manifest = { $format: "drawdb-pack", $version: 1, exportedAt: new Date().toISOString(), diagrams: [], templates: [] };
+  const dDir = zip.folder("diagrams");
+  const tDir = zip.folder("templates");
+  const diagrams = await db.diagrams.toArray();
+  for (const d of diagrams) {
+    const file = `${sanitize(d.name)}__${d.diagramId || d.id}.ddb`;
+    dDir.file(file, serializeDdb(d));
+    manifest.diagrams.push({ file, diagramId: d.diagramId, name: d.name });
+  }
+  const tpls = await db.templates.where("custom").equals(1).toArray();
+  for (const t of tpls) {
+    const file = `${sanitize(t.title)}__${t.id}.json`;
+    tDir.file(file, JSON.stringify(t, null, 2));
+    manifest.templates.push({ file, title: t.title });
+  }
+  zip.file(MANIFEST, JSON.stringify(manifest, null, 2));
+  const bytes = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 6 } });
+  await writeBinaryFile(path, bytes);
+  return { path, count: manifest.diagrams.length };
+}
+
+export async function importFromPack(path, { merge = true } = {}) {
+  const bytes = await readBinaryFile(path);
+  const zip = await JSZip.loadAsync(bytes);
+  const raw = await zip.file(MANIFEST)?.async("string");
+  if (!raw) throw new Error(t("error.missingDdbPackManifest"));
+  const manifest = JSON.parse(raw);
+  if (manifest.$format !== "drawdb-pack") throw new Error(t("error.invalidDdbPack"));
+  if (!merge) await db.diagrams.clear();
+  let imported = 0;
+  const diagramIds = [];
+  for (const m of manifest.diagrams ?? []) {
+    const text = await zip.file(`diagrams/${m.file}`)?.async("string");
+    if (!text) continue;
+    const data = parseDdb(text);
+    const result = await upsertDdbDiagram(db.diagrams, data);
+    diagramIds.push(result.diagramId);
+    imported++;
+  }
+  for (const m of manifest.templates ?? []) {
+    const text = await zip.file(`templates/${m.file}`)?.async("string");
+    if (!text) continue;
+    const t = JSON.parse(text);
+    await db.templates.add({ ...t, custom: 1 });
+  }
+  return { count: imported, diagramIds };
+}

@@ -8,7 +8,7 @@ a clean default drawDB "ER diagram" icon is drawn programmatically, so the
 project builds with a real icon out of the box.
 
 Usage:
-    python3 scripts/generate_icons.py                 # default icon -> overlay/src-tauri/icons
+    python3 scripts/generate_icons.py                 # default icon -> src-tauri/icons
     python3 scripts/generate_icons.py -s logo.png     # from your own square PNG
     python3 scripts/generate_icons.py -o path/to/icons
 
@@ -124,8 +124,8 @@ def main():
     ap = argparse.ArgumentParser(description="Generate the Tauri icon set for drawDB Desktop.")
     here = Path(__file__).resolve().parent
     ap.add_argument("-s", "--source", help="Source PNG (square recommended). Omit to draw the default icon.")
-    ap.add_argument("-o", "--out", default=str(here.parent / "overlay" / "src-tauri" / "icons"),
-                    help="Output directory (default: overlay/src-tauri/icons)")
+    ap.add_argument("-o", "--out", default=str(here.parent / "src-tauri" / "icons"),
+                    help="Output directory (default: src-tauri/icons)")
     args = ap.parse_args()
 
     out = Path(args.out)

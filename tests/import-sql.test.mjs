@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fromOracle } from "../overlay/src/data/importSQL/oracle.js";
-import { fromMySQL } from "../overlay/src/data/importSQL/mysqlEnhanced.js";
-import { fromPostgres } from "../overlay/src/data/importSQL/postgres.js";
+import { fromOracle } from "../src/data/importSQL/oracle.js";
+import { fromMySQL } from "../src/data/importSQL/mysqlEnhanced.js";
+import { fromPostgres } from "../src/data/importSQL/postgres.js";
 
 const cases = [
   {

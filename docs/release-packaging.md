@@ -9,15 +9,14 @@ CI. See
 [`validation-matrix.md`](validation-matrix.md) for the current split between CI
 coverage and manual release validation.
 
-The tagged release path pins the upstream drawDB-App commit used by the CI
-overlay-build gate. Update both workflows together after validating a newer
-upstream revision; workflow dispatch can override `base_ref` for an explicit
-compatibility build.
+The tagged release builds the integrated source tree in this repository. The
+imported drawDB revision and merge procedure are recorded in `UPSTREAM.md`;
+there is no release-time base checkout or overlay application step.
 
 ## OS code signing
 
 Windows bundles use `bundle.windows.signCommand`, which calls
-`overlay/src-tauri/scripts/sign-windows.ps1` during Tauri bundling. The script is
+`src-tauri/scripts/sign-windows.ps1` during Tauri bundling. The script is
 credential-gated:
 
 - Azure Artifact Signing path: set `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
@@ -51,7 +50,7 @@ non-draft release, verify `signtool verify /pa` for Windows artifacts and
 
 ## Auto-updater artifacts
 
-`overlay/src-tauri/tauri.conf.json` enables `bundle.createUpdaterArtifacts` and
+`src-tauri/tauri.conf.json` enables `bundle.createUpdaterArtifacts` and
 points the updater at:
 
 ```text
@@ -100,7 +99,7 @@ The policy favors clean Windows 10 installability over smaller downloads:
 ## Desktop security policy
 
 The Tauri desktop shell ships with an explicit CSP in
-`overlay/src-tauri/tauri.conf.json`; it must not be set to `null`. The policy is
+`src-tauri/tauri.conf.json`; it must not be set to `null`. The policy is
 intentionally local-first: scripts are app-local, styles allow inline CSS for
 the existing UI, images allow local/data/blob/asset URLs, IPC is limited to the
 Tauri IPC endpoints, and `object-src`, `base-uri`, and `frame-ancestors` are
@@ -114,7 +113,7 @@ issue documents why a broader path is required.
 
 Linux builds stay on Ubuntu 22.04 as the glibc baseline for compatibility with
 older supported distributions. The RPM bundle uses the Tauri `bundle.linux.rpm`
-metadata in `overlay/src-tauri/tauri.conf.json`, including runtime dependencies
+metadata in `src-tauri/tauri.conf.json`, including runtime dependencies
 for WebKitGTK, GTK, AppIndicator, and librsvg. The Linux x64 RPM is a first-party
 artifact and the release workflow downloads the `ubuntu-22.04` x64 artifact after
 the build matrix, inspects the `.rpm`, installs it with `dnf` in a Fedora
@@ -123,12 +122,13 @@ smoke test, and removes it.
 
 ## Linux file associations
 
-The Linux `.deb` and `.rpm` packages are expected to register drawDB as the
-default-capable editor for `.ddb` and `.ddbpack` files:
+The Linux `.deb` and `.rpm` packages are expected to register drawDB as a
+capable handler for `.ddb`, `.ddbpack`, and `.xlsx` files:
 
 - `bundle.fileAssociations` uses drawDB-owned MIME types:
-  `application/x-drawdb` and `application/x-drawdbpack`.
-- `overlay/src-tauri/linux/app.drawdb.desktop.xml` defines the shared MIME
+  `application/x-drawdb` and `application/x-drawdbpack`, plus the standard
+  `.xlsx` MIME type for workbook import.
+- `src-tauri/linux/app.drawdb.desktop.xml` defines the shared MIME
   database globs for `*.ddb` and `*.ddbpack`.
 - The Tauri Linux package `files` maps install that MIME XML, AppStream
   metadata, and hicolor mimetype icons into `.deb`, `.rpm`, and `.AppImage`
@@ -136,7 +136,7 @@ default-capable editor for `.ddb` and `.ddbpack` files:
 - `.deb` and `.rpm` post-install/post-remove hooks refresh the shared MIME,
   desktop, and hicolor icon caches when the host distribution provides those
   cache tools.
-- `overlay/src-tauri/linux/drawdb.desktop.hbs` keeps `MimeType=` aligned with
+- `src-tauri/linux/drawdb.desktop.hbs` keeps `MimeType=` aligned with
   the Tauri file associations and sets `Exec={{exec}} %F` so file managers pass
   selected local files through argv.
 
@@ -146,16 +146,19 @@ include:
 ```sh
 xdg-mime query filetype sample.ddb
 xdg-mime query filetype sample.ddbpack
+xdg-mime query filetype sample.xlsx
 xdg-mime query default application/x-drawdb
 xdg-mime query default application/x-drawdbpack
+gio mime application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 grep '^Exec=' /usr/share/applications/drawDB.desktop
 ```
 
-The expected MIME filetype values are `application/x-drawdb` and
-`application/x-drawdbpack`; the expected default handler is `drawDB.desktop`.
-The `Exec=` line must keep `%F`. Complete release sign-off still requires
-double-click testing on Ubuntu GNOME and Fedora KDE with the app closed and with
-an existing drawDB instance already running.
+The expected custom MIME filetype values are `application/x-drawdb` and
+`application/x-drawdbpack`; `drawDB.desktop` must be registered for those types
+and as an `.xlsx` handler. The user's existing `.xlsx` default must not be
+forcibly replaced. The `Exec=` line must keep `%F`. Complete release sign-off
+still requires double-click testing on Ubuntu GNOME and Fedora KDE with the app
+closed and with an existing drawDB instance already running.
 
 AppImage remains a portable artifact and does not automatically install or claim
 system file associations by itself. The AppImage includes the same desktop,
@@ -170,7 +173,7 @@ desktop entry must preserve `%F` in `Exec=` for file-manager opens.
 | Channel | Policy |
 | --- | --- |
 | RPM | Supported as a first-party GitHub Release artifact. CI Fedora-install-and-headless-launch-smoke-tests the Linux x64 RPM with `dnf`, D-Bus, and Xvfb; maintainers should still complete the full desktop feature matrix during manual Fedora release validation. |
-| Flatpak | Deferred. A Flathub submission should wait until the desktop patches are merged into a maintained app repo and a runtime sandbox review is done. |
+| Flatpak | Deferred. A Flathub submission should wait until the integrated desktop app has completed a runtime sandbox review. |
 | AUR | Deferred. A PKGBUILD can wrap the GitHub Release artifacts after release asset names stabilize. |
 | Snap | Deferred. Snap publication requires store credentials and confinement review; use AppImage/RPM/DEB until there is user demand. |
 

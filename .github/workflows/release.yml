@@ -5,28 +5,16 @@ name: Release (cross-platform build)
 # The Linux x64 RPM artifact is installed, headless-launch-smoke-tested, and
 # removed in Fedora after the build matrix finishes.
 #
-# How it works: this repo holds the *overlay* (new modules + Tauri config). The
-# job clones the base drawDB-App, lays the overlay on top, generates icons,
-# installs the extra dependencies, and runs tauri-action to produce bundles.
+# The repository contains the integrated drawDB frontend, desktop modules, and
+# Tauri backend. Every release target builds the same committed source tree;
+# there is no external base checkout or manual patch phase.
 #
-# NOTE: the File-menu wiring lives in three files that must be hand-merged into
-# the base (see overlay/src/patches/PATCHES_FULL.md). Point `base_repo` at a fork
-# that already has those patches committed to ship the full desktop UX; otherwise
-# you still get building installers, just without the new File menu.
-#
-# Trigger: push a tag like `v1.7.0`, or run manually (workflow_dispatch).
+# Trigger: push a tag like `v1.8.0`, or run manually (workflow_dispatch).
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
-    inputs:
-      base_repo:
-        description: "Base drawDB-App repo (owner/name)"
-        default: "khsuzan/drawDB-App"
-      base_ref:
-        description: "Base repo commit, branch, or tag"
-        default: "c80cb68e9d74b783098c47301c76a693615def95"
 
 permissions:
   contents: write
@@ -47,23 +35,8 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout overlay
+      - name: Checkout integrated app
         uses: actions/checkout@v7
-        with:
-          path: overlay-src
-
-      - name: Resolve base repo
-        shell: bash
-        run: |
-          echo "BASE_REPO=${{ github.event.inputs.base_repo || 'khsuzan/drawDB-App' }}" >> "$GITHUB_ENV"
-          echo "BASE_REF=${{ github.event.inputs.base_ref || 'c80cb68e9d74b783098c47301c76a693615def95' }}" >> "$GITHUB_ENV"
-
-      - name: Checkout base drawDB-App
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.BASE_REPO }}
-          ref: ${{ env.BASE_REF }}
-          path: app
 
       - name: Install Linux build dependencies
         if: startsWith(matrix.os, 'ubuntu-')
@@ -77,6 +50,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 20
+          cache: npm
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -86,10 +60,10 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./app/src-tauri -> target"
+          workspaces: "./src-tauri -> target"
 
-      - name: Apply overlay and install dependencies
-        run: node overlay-src/scripts/setup.mjs --project-dir ../app
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Setup Python (icon generation)
         uses: actions/setup-python@v6
@@ -99,7 +73,7 @@ jobs:
       - name: Generate icons
         run: |
           python -m pip install --quiet pillow
-          python overlay-src/scripts/generate_icons.py -o app/src-tauri/icons
+          python scripts/generate_icons.py -o src-tauri/icons
 
       - name: Prepare macOS signing and notarization environment
         if: startsWith(matrix.os, 'macos-')
@@ -211,17 +185,49 @@ jobs:
           WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
           WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL }}
         with:
-          projectPath: app
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           # GitHub ignores this when the pushed tag already exists. Using the default
           # branch avoids GitHub App restrictions on release targets behind main.
           releaseCommitish: ${{ github.event.repository.default_branch }}
           releaseName: "drawDB Desktop ${{ github.ref_name }}"
           releaseDraft: true
-          releaseBody: "Automated cross-platform build. See HANDOVER.md."
+          releaseBody: "Automated cross-platform build. See docs/release-packaging.md and docs/validation-matrix.md."
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
+
+      - name: Verify macOS document associations
+        if: startsWith(matrix.os, 'macos-')
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          plist_path="$(find src-tauri/target -path '*/release/bundle/macos/*.app/Contents/Info.plist' -print -quit)"
+          if [[ -z "${plist_path}" ]]; then
+            echo "No generated macOS Info.plist was found."
+            exit 1
+          fi
+
+          plutil -extract CFBundleDocumentTypes json -o "${RUNNER_TEMP}/document-types.json" "${plist_path}"
+          python <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          document_types = json.loads(
+              Path(os.environ["RUNNER_TEMP"], "document-types.json").read_text()
+          )
+          extensions = {
+              extension.lower()
+              for document_type in document_types
+              for extension in document_type.get("CFBundleTypeExtensions", [])
+          }
+          required = {"ddb", "ddbpack", "xlsx"}
+          missing = required - extensions
+          if missing:
+              raise SystemExit(f"Missing CFBundleDocumentTypes extensions: {sorted(missing)}")
+          print(f"Verified macOS document extensions: {sorted(extensions)}")
+          PY
 
       - name: Upload bundles as workflow artifacts
         if: always()
@@ -229,17 +235,17 @@ jobs:
         with:
           name: drawdb-${{ matrix.os }}-${{ matrix.artifact_suffix || matrix.rust_target || 'native' }}
           path: |
-            app/src-tauri/target/**/release/bundle/**/*.dmg
-            app/src-tauri/target/**/release/bundle/**/*.app
-            app/src-tauri/target/**/release/bundle/**/*.AppImage
-            app/src-tauri/target/**/release/bundle/**/*.deb
-            app/src-tauri/target/**/release/bundle/**/*.rpm
-            app/src-tauri/target/**/release/bundle/**/*.exe
-            app/src-tauri/target/**/release/bundle/**/*.msi
-            app/src-tauri/target/**/release/bundle/**/*.sig
-            app/src-tauri/target/**/release/bundle/**/*.tar.gz
-            app/src-tauri/target/**/release/bundle/**/*.zip
-            app/src-tauri/target/**/release/bundle/**/latest.json
+            src-tauri/target/**/release/bundle/**/*.dmg
+            src-tauri/target/**/release/bundle/**/*.app
+            src-tauri/target/**/release/bundle/**/*.AppImage
+            src-tauri/target/**/release/bundle/**/*.deb
+            src-tauri/target/**/release/bundle/**/*.rpm
+            src-tauri/target/**/release/bundle/**/*.exe
+            src-tauri/target/**/release/bundle/**/*.msi
+            src-tauri/target/**/release/bundle/**/*.sig
+            src-tauri/target/**/release/bundle/**/*.tar.gz
+            src-tauri/target/**/release/bundle/**/*.zip
+            src-tauri/target/**/release/bundle/**/latest.json
           if-no-files-found: ignore
           retention-days: 14
 
@@ -294,6 +300,20 @@ jobs:
 
               mapfile -t installed_files < <(rpm -ql "${package_name}")
               printf "%s\n" "${installed_files[@]}"
+
+              desktop_path="$(printf "%s\n" "${installed_files[@]}" | awk "/\/share\/applications\/.*\.desktop$/ { print; exit }")"
+              if [[ -z "${desktop_path}" ]]; then
+                echo "No installed desktop entry was found."
+                exit 1
+              fi
+              grep -E "^Exec=.* %F$" "${desktop_path}"
+              for mime in \
+                application/x-drawdb \
+                application/x-drawdbpack \
+                application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+              do
+                grep -F "${mime};" "${desktop_path}"
+              done
 
               binary_path=""
               for candidate in \

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { toOracle } from "../overlay/src/data/exportSQL/oracle.js";
-import { toMySQL } from "../overlay/src/data/exportSQL/mysqlEnhanced.js";
-import { toPostgres } from "../overlay/src/data/exportSQL/postgres.js";
-import { fromOracle } from "../overlay/src/data/importSQL/oracle.js";
-import { fromMySQL } from "../overlay/src/data/importSQL/mysqlEnhanced.js";
-import { fromPostgres } from "../overlay/src/data/importSQL/postgres.js";
+import { toOracle } from "../src/data/exportSQL/oracle.js";
+import { toMySQL } from "../src/data/exportSQL/mysqlEnhanced.js";
+import { toPostgres } from "../src/data/exportSQL/postgres.js";
+import { fromOracle } from "../src/data/importSQL/oracle.js";
+import { fromMySQL } from "../src/data/importSQL/mysqlEnhanced.js";
+import { fromPostgres } from "../src/data/importSQL/postgres.js";
 import { makeShopDiagram } from "./fixtures/shopDiagram.mjs";
 
 describe("SQL dialect smoke tests", () => {

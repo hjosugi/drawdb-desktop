@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { toOracle } from "../overlay/src/data/exportSQL/oracle.js";
-import { toMySQL } from "../overlay/src/data/exportSQL/mysqlEnhanced.js";
-import { toPostgres } from "../overlay/src/data/exportSQL/postgres.js";
+import { toOracle } from "../src/data/exportSQL/oracle.js";
+import { toMySQL } from "../src/data/exportSQL/mysqlEnhanced.js";
+import { toPostgres } from "../src/data/exportSQL/postgres.js";
 import { makeShopDiagram } from "./fixtures/shopDiagram.mjs";
 
 describe("SQL exporter snapshots", () => {

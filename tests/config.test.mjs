@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const jsonFiles = [
-  "overlay/src-tauri/tauri.conf.json",
-  "overlay/src-tauri/capabilities/default.json",
+  "src-tauri/tauri.conf.json",
+  "src-tauri/capabilities/default.json",
 ];
 
 const linuxMimeMetadataFiles = {
@@ -38,71 +38,81 @@ describe("shipped JSON config", () => {
   });
 
   it("keeps the Tauri application version aligned across manifests", () => {
-    const version = readJson("overlay/src-tauri/tauri.conf.json").version;
-    const cargoToml = readFileSync("overlay/src-tauri/Cargo.toml", "utf8");
-    const cargoLock = readFileSync("overlay/src-tauri/Cargo.lock", "utf8");
+    const version = readJson("src-tauri/tauri.conf.json").version;
+    const packageJson = readJson("package.json");
+    const cargoToml = readFileSync("src-tauri/Cargo.toml", "utf8");
+    const cargoLock = readFileSync("src-tauri/Cargo.lock", "utf8");
 
     expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(packageJson.version).toBe(version);
     expect(cargoToml).toContain(`name = "drawdb-desktop"\nversion = "${version}"`);
+    expect(cargoToml).toContain('crate-type = ["rlib"]');
     expect(cargoLock).toContain(`name = "drawdb-desktop"\nversion = "${version}"`);
   });
 
-  it("keeps setup dependency lists centralized in package.json", () => {
+  it("ships one integrated app with desktop dependencies and no manual overlay step", () => {
     const pkg = readJson("package.json");
-    const setup = pkg.drawdbDesktopSetup;
 
-    expect(setup).toBeTruthy();
-    expect(setup.baseRef).toBe("c80cb68e9d74b783098c47301c76a693615def95");
-    expect(setup.npmPackages).toEqual(expect.arrayContaining([
-      "jszip",
-      "exceljs",
-      "@tauri-apps/api@2.11.1",
-      "@tauri-apps/plugin-fs@2.5.1",
-      "@tauri-apps/plugin-dialog@2.7.1",
-      "@tauri-apps/plugin-sql@2.4.0",
-      "@tauri-apps/plugin-opener@2.5.4",
-      "@tauri-apps/plugin-window-state@2.4.1",
-      "@tauri-apps/plugin-process@2.3.1",
-      "@tauri-apps/plugin-updater@2.10.1",
-    ]));
-    expect(setup.cargoPackages.map((pkg) => pkg.name)).toEqual(expect.arrayContaining([
-      "tauri-plugin-fs",
-      "tauri-plugin-dialog",
-      "tauri-plugin-single-instance",
-      "tauri-plugin-sql",
-      "tauri-plugin-opener",
-      "tauri-plugin-window-state",
-      "tauri-plugin-process",
-      "tauri-plugin-updater",
-    ]));
-    expect(pkg.scripts.setup).toBe("node scripts/setup.mjs");
+    expect(pkg.name).toBe("drawdb-desktop");
+    expect(pkg.license).toBe("AGPL-3.0-only");
+    expect(pkg.dependencies).toMatchObject({
+      "@tauri-apps/api": "2.11.1",
+      "@tauri-apps/plugin-dialog": "2.7.1",
+      "@tauri-apps/plugin-fs": "2.5.1",
+      "@tauri-apps/plugin-opener": "2.5.4",
+      "@tauri-apps/plugin-process": "2.3.1",
+      "@tauri-apps/plugin-sql": "2.4.0",
+      "@tauri-apps/plugin-updater": "2.10.1",
+      "@tauri-apps/plugin-window-state": "2.4.1",
+      exceljs: "^4.4.0",
+      jszip: "^3.10.1",
+    });
+    expect(pkg.scripts.setup).toBeUndefined();
+    expect(pkg.scripts["desktop:build"]).toBe("tauri build");
     expect(pkg.scripts.cli).toBe("node scripts/drawdb-cli.mjs");
     expect(pkg.bin.drawdb).toBe("./scripts/drawdb-cli.mjs");
-    const setupScript = readFileSync("scripts/setup.mjs", "utf8");
-    expect(setupScript).toContain("applyDesktopIntegration(projectDir)");
-    expect(setupScript).toContain('source.replace(/\\r\\n/g, "\\n")');
-    expect(setupScript).toContain('lineEnding === "\\r\\n"');
-    expect(setupScript).toContain("checkForAppUpdates");
-    expect(setupScript).toContain("check_updates");
+    expect(existsSync("scripts/setup.mjs")).toBe(false);
+    expect(existsSync("overlay")).toBe(false);
+    expect(existsSync("APPLY_PATCH.md")).toBe(false);
+
+    expect(readFileSync("src/main.jsx", "utf8")).toContain("<FilePathProvider>");
+    expect(readFileSync("src/components/Workspace.jsx", "utf8")).toContain("useDesktopWorkspace({");
+    expect(readFileSync("src/components/EditorHeader/ControlPanel.jsx", "utf8")).toContain("useDesktopFileMenu({");
+
+    const app = readFileSync("src/App.jsx", "utf8");
+    expect(app).toContain('desktopAvailable() ? <Navigate to="/editor" replace />');
+    expect(readFileSync("src/main.jsx", "utf8")).toContain("installDesktopExternalLinkHandler()");
+    expect(readFileSync("vite.config.js", "utf8")).toContain("lottie_light.js");
+
+    const html = readFileSync("index.html", "utf8");
+    expect(html).not.toContain("cdn.jsdelivr.net");
+    expect(html).not.toContain("cdnjs.cloudflare.com");
+    expect(pkg.dependencies).toMatchObject({
+      "@fortawesome/fontawesome-free": "6.5.2",
+      "bootstrap-icons": "1.11.3",
+    });
   });
 
   it("grants local-history filesystem and opener permissions", () => {
-    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+    const capabilities = readJson("src-tauri/capabilities/default.json");
     const permissions = capabilities.permissions;
     const scope = permissions.find((permission) => permission.identifier === "fs:scope");
+    const openerScope = permissions.find(
+      (permission) => permission.identifier === "opener:allow-open-path",
+    );
 
     expect(permissions).toEqual(expect.arrayContaining([
       "fs:allow-read-dir",
       "fs:allow-remove",
       "fs:allow-stat",
       "opener:default",
-      "opener:allow-open-path",
     ]));
     expect(scope.allow.map((entry) => entry.path)).toEqual(expect.arrayContaining(["$APPDATA/**"]));
+    expect(openerScope.allow).toEqual([{ path: "$APPDATA/**" }]);
   });
 
   it("ships a restrictive Tauri content security policy", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const config = readJson("src-tauri/tauri.conf.json");
     const csp = config.app.security.csp;
     const directives = cspDirectives(csp);
 
@@ -121,7 +131,7 @@ describe("shipped JSON config", () => {
   });
 
   it("keeps desktop capabilities scoped to app and user-chosen file locations", () => {
-    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+    const capabilities = readJson("src-tauri/capabilities/default.json");
     const permissions = capabilities.permissions;
     const scope = permissions.find((permission) => permission.identifier === "fs:scope");
     const scopedPaths = scope.allow.map((entry) => entry.path).sort();
@@ -145,43 +155,49 @@ describe("shipped JSON config", () => {
   });
 
   it("uses a frontend-ready handshake for startup file opens", () => {
-    const lib = readFileSync("overlay/src-tauri/src/lib.rs", "utf8");
-    const desktopIO = readFileSync("overlay/src/utils/desktopIO.js", "utf8");
+    const lib = readFileSync("src-tauri/src/lib.rs", "utf8");
+    const desktopIO = readFileSync("src/utils/desktopIO.js", "utf8");
     const listenIndex = desktopIO.indexOf('listen("open-file"');
     const readyIndex = desktopIO.indexOf('invoke("frontend_ready"');
 
     expect(lib).toContain("#[tauri::command]");
     expect(lib).toContain("fn frontend_ready");
     expect(lib).toContain("OpenFileQueue");
-    expect(lib).toContain("tauri::generate_handler![frontend_ready]");
+    expect(lib).toContain("app.fs_scope().allow_file(&path)");
+    expect(lib).toContain("tauri::generate_handler![frontend_ready, request_app_exit]");
     expect(lib).not.toContain("thread::sleep");
     expect(lib).not.toContain("Duration::from_millis(700)");
     expect(listenIndex).toBeGreaterThanOrEqual(0);
     expect(readyIndex).toBeGreaterThan(listenIndex);
   });
 
-  it("documents the dirty-close guard for desktop windows", () => {
-    const desktopIO = readFileSync("overlay/src/utils/desktopIO.js", "utf8");
-    const patches = readFileSync("overlay/src/patches/PATCHES_FULL.md", "utf8");
-    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
+  it("wires the dirty-close guard and application-level quit handshake", () => {
+    const desktopIO = readFileSync("src/utils/desktopIO.js", "utf8");
+    const workspace = readFileSync("src/desktop/useDesktopWorkspace.js", "utf8");
+    const lib = readFileSync("src-tauri/src/lib.rs", "utf8");
+    const capabilities = readJson("src-tauri/capabilities/default.json");
 
     expect(capabilities.permissions).toEqual(expect.arrayContaining([
       "core:window:default",
       "dialog:allow-message",
     ]));
     expect(desktopIO).toContain("onCloseRequested");
-    expect(desktopIO).toContain("closeCurrentWindow");
+    expect(desktopIO).toContain("onAppExitRequested");
+    expect(desktopIO).toContain("requestAppExit");
     expect(desktopIO).toContain("confirmCloseWithUnsavedChanges");
     expect(desktopIO).toContain("buttons: { yes: save, no: discard, cancel }");
-    expect(patches).toContain("confirmCloseWithUnsavedChanges");
-    expect(patches).toContain("fileSaver.current.flush()");
-    expect(patches).toContain("fileSaver.current.hasPending()");
+    expect(workspace).toContain("fileSaverRef.current.flush()");
+    expect(workspace).toContain("fileSaverRef.current.hasPending()");
+    expect(workspace).toContain("event.preventDefault()");
+    expect(lib).toContain("tauri::RunEvent::ExitRequested");
+    expect(lib).toContain('app.emit("app-exit-requested"');
+    expect(lib).toContain("fn request_app_exit");
   });
 
   it("enables Tauri window state persistence for desktop builds", () => {
-    const cargoToml = readFileSync("overlay/src-tauri/Cargo.toml", "utf8");
-    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
-    const lib = readFileSync("overlay/src-tauri/src/lib.rs", "utf8");
+    const cargoToml = readFileSync("src-tauri/Cargo.toml", "utf8");
+    const capabilities = readJson("src-tauri/capabilities/default.json");
+    const lib = readFileSync("src-tauri/src/lib.rs", "utf8");
 
     expect(cargoToml).toContain("tauri-plugin-window-state = \"2\"");
     expect(cargoToml).toContain("[target.'cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))'.dependencies]");
@@ -193,11 +209,11 @@ describe("shipped JSON config", () => {
   });
 
   it("configures signed GitHub Releases updater support", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
-    const capabilities = readJson("overlay/src-tauri/capabilities/default.json");
-    const cargoToml = readFileSync("overlay/src-tauri/Cargo.toml", "utf8");
-    const lib = readFileSync("overlay/src-tauri/src/lib.rs", "utf8");
-    const appUpdates = readFileSync("overlay/src/utils/appUpdates.js", "utf8");
+    const config = readJson("src-tauri/tauri.conf.json");
+    const capabilities = readJson("src-tauri/capabilities/default.json");
+    const cargoToml = readFileSync("src-tauri/Cargo.toml", "utf8");
+    const lib = readFileSync("src-tauri/src/lib.rs", "utf8");
+    const appUpdates = readFileSync("src/utils/appUpdates.js", "utf8");
 
     expect(config.bundle.createUpdaterArtifacts).toBe(true);
     expect(config.plugins.updater).toMatchObject({
@@ -222,10 +238,10 @@ describe("shipped JSON config", () => {
   });
 
   it("configures conditional OS code signing and macOS notarization inputs", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const config = readJson("src-tauri/tauri.conf.json");
     const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
-    const windowsSigner = readFileSync("overlay/src-tauri/scripts/sign-windows.ps1", "utf8");
-    const entitlements = readFileSync("overlay/src-tauri/entitlements.plist", "utf8");
+    const windowsSigner = readFileSync("src-tauri/scripts/sign-windows.ps1", "utf8");
+    const entitlements = readFileSync("src-tauri/entitlements.plist", "utf8");
 
     expect(config.bundle.windows).toMatchObject({
       digestAlgorithm: "sha256",
@@ -262,7 +278,7 @@ describe("shipped JSON config", () => {
   });
 
   it("requests every first-party release bundle, including rpm", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const config = readJson("src-tauri/tauri.conf.json");
     expect(config.bundle.targets).toEqual(expect.arrayContaining([
       "nsis",
       "msi",
@@ -282,10 +298,12 @@ describe("shipped JSON config", () => {
   });
 
   it("declares Linux file associations with drawDB-specific MIME types", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const config = readJson("src-tauri/tauri.conf.json");
     const associations = Object.fromEntries(
       config.bundle.fileAssociations.map((association) => [association.ext[0], association]),
     );
+
+    expect(Object.keys(associations).sort()).toEqual(["ddb", "ddbpack", "xlsx"]);
 
     expect(associations.ddb).toMatchObject({
       name: "drawDB Diagram",
@@ -299,17 +317,29 @@ describe("shipped JSON config", () => {
       role: "Editor",
       mimeType: "application/x-drawdbpack",
     });
+    expect(associations.xlsx).toMatchObject({
+      name: "Excel Workbook",
+      description: "Excel workbook imported by drawDB",
+      role: "Viewer",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     expect(Object.values(associations).map((association) => association.mimeType)).not.toEqual(expect.arrayContaining([
       "application/json",
       "application/zip",
     ]));
+
+    const rustBackend = readFileSync("src-tauri/src/lib.rs", "utf8");
+    for (const extension of Object.keys(associations)) {
+      expect(rustBackend).toContain(`lower.ends_with(\".${extension}\")`);
+    }
+    expect(rustBackend).toContain("tauri::RunEvent::Opened { urls }");
   });
 
   it("packages Linux shared MIME, mimetype icons, and AppStream metadata", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const config = readJson("src-tauri/tauri.conf.json");
     const linux = config.bundle.linux;
-    const mimeXml = readFileSync("overlay/src-tauri/linux/app.drawdb.desktop.xml", "utf8");
-    const appStreamXml = readFileSync("overlay/src-tauri/linux/app.drawdb.desktop.metainfo.xml", "utf8");
+    const mimeXml = readFileSync("src-tauri/linux/app.drawdb.desktop.xml", "utf8");
+    const appStreamXml = readFileSync("src-tauri/linux/app.drawdb.desktop.metainfo.xml", "utf8");
 
     expect(linux.deb.files).toMatchObject(linuxMimeMetadataFiles);
     expect(linux.rpm.files).toMatchObject(linuxMimeMetadataFiles);
@@ -326,12 +356,15 @@ describe("shipped JSON config", () => {
     expect(appStreamXml).toContain('<launchable type="desktop-id">drawDB.desktop</launchable>');
     expect(appStreamXml).toContain("<mediatype>application/x-drawdb</mediatype>");
     expect(appStreamXml).toContain("<mediatype>application/x-drawdbpack</mediatype>");
+    expect(appStreamXml).toContain(
+      "<mediatype>application/vnd.openxmlformats-officedocument.spreadsheetml.sheet</mediatype>",
+    );
   });
 
   it("uses Linux desktop entries that pass selected files through argv", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
-    const template = readFileSync("overlay/src-tauri/linux/drawdb.desktop.hbs", "utf8");
-    const cacheScript = readFileSync("overlay/src-tauri/linux/update-desktop-mime-cache.sh", "utf8");
+    const config = readJson("src-tauri/tauri.conf.json");
+    const template = readFileSync("src-tauri/linux/drawdb.desktop.hbs", "utf8");
+    const cacheScript = readFileSync("src-tauri/linux/update-desktop-mime-cache.sh", "utf8");
 
     expect(config.bundle.linux.deb.desktopTemplate).toBe("linux/drawdb.desktop.hbs");
     expect(config.bundle.linux.rpm.desktopTemplate).toBe("linux/drawdb.desktop.hbs");
@@ -348,7 +381,7 @@ describe("shipped JSON config", () => {
   });
 
   it("bundles the WebView2 runtime installer for Windows 10 machines without WebView2", () => {
-    const config = readJson("overlay/src-tauri/tauri.conf.json");
+    const config = readJson("src-tauri/tauri.conf.json");
 
     expect(config.bundle.targets).toEqual(expect.arrayContaining(["nsis", "msi"]));
     expect(config.bundle.windows.webviewInstallMode).toEqual({
@@ -375,13 +408,21 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow).toContain("--bundles nsis");
   });
 
-  it("pins the upstream app revision consistently for CI and releases", () => {
+  it("records the imported upstream revision without cloning a base app in CI", () => {
     const ciWorkflow = readFileSync(".github/workflows/ci.yml", "utf8");
     const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
-    const baseRevision = "c80cb68e9d74b783098c47301c76a693615def95";
+    const upstream = readFileSync("UPSTREAM.md", "utf8");
+    const contributing = readFileSync("CONTRIBUTING.md", "utf8");
+    const baseRevision = "b24ad20b6588b9b99609e8a03b87efa7b28cf245";
 
-    expect(ciWorkflow).toContain(`ref: ${baseRevision}`);
-    expect(releaseWorkflow.match(new RegExp(baseRevision, "g"))).toHaveLength(2);
+    expect(upstream).toContain("drawdb-io/drawdb");
+    expect(upstream).toContain(baseRevision);
+    expect(contributing).toContain("git remote add upstream https://github.com/drawdb-io/drawdb.git");
+    expect(contributing).toContain("git merge --no-ff upstream/main");
+    expect(ciWorkflow).not.toContain("repository: khsuzan/drawDB-App");
+    expect(ciWorkflow).toContain("npm audit --omit=dev --audit-level=high");
+    expect(releaseWorkflow).not.toContain("base_repo");
+    expect(releaseWorkflow).not.toContain("overlay-src");
   });
 
   it("uses current Node 24 based GitHub action majors", () => {
@@ -416,7 +457,17 @@ describe("shipped JSON config", () => {
     expect(releaseWorkflow).toContain("xorg-x11-server-Xvfb");
     expect(releaseWorkflow).toContain("dbus-run-session");
     expect(releaseWorkflow).toContain("WEBKIT_DISABLE_COMPOSITING_MODE=1");
+    expect(releaseWorkflow).toContain('grep -E "^Exec=.* %F$"');
+    expect(releaseWorkflow).toContain("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     expect(releaseWorkflow).toContain("dnf remove -y");
+  });
+
+  it("verifies generated macOS document associations during release", () => {
+    const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
+
+    expect(releaseWorkflow).toContain("Verify macOS document associations");
+    expect(releaseWorkflow).toContain("CFBundleDocumentTypes");
+    expect(releaseWorkflow).toContain('required = {"ddb", "ddbpack", "xlsx"}');
   });
 
   it("documents supported OS and package validation coverage", () => {

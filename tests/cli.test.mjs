@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import { makeShopDiagram } from "./fixtures/shopDiagram.mjs";
-import { parseDdb, serializeDdb, validateDdbDiagram } from "../overlay/src/utils/ddb.js";
+import { parseDdb, serializeDdb, validateDdbDiagram } from "../src/utils/ddb.js";
 
 const CLI = "scripts/drawdb-cli.mjs";
 let tempDirs = [];

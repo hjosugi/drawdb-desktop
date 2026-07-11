@@ -6,7 +6,7 @@ import {
   setLocale,
   supportedLocales,
   t,
-} from "../overlay/src/i18n/index.js";
+} from "../src/i18n/index.js";
 
 const originalLocalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
 const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");

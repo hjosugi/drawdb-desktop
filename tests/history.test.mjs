@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeShopDiagram } from "./fixtures/shopDiagram.mjs";
-import { makeAutoSaver, serializeDdb, stableStringify } from "../overlay/src/utils/desktopIO.js";
+import { makeAutoSaver, serializeDdb, stableStringify } from "../src/utils/desktopIO.js";
 import {
   createHistorySnapshot,
   gzipText,
@@ -12,7 +12,7 @@ import {
   shouldCreateTimedSnapshot,
   summarizeDiagramDiff,
   writeHistorySettings,
-} from "../overlay/src/utils/history.js";
+} from "../src/utils/history.js";
 
 function memoryStorage() {
   const files = new Map();

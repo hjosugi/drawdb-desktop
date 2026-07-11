@@ -1,0 +1,7 @@
+drawDB Desktop incorporates drawDB from https://github.com/drawdb-io/drawdb,
+licensed under the GNU Affero General Public License version 3.
+
+Desktop-specific files originally developed in this repository were published
+under the BSD Zero Clause License. A copy is retained in
+LICENSE-ORIGINAL-CODE. The integrated application as distributed is licensed
+under AGPL-3.0-only; see LICENSE.

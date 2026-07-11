@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeConstraintAction, stripSqlComments } from "../overlay/src/data/importSQL/common.js";
+import { normalizeConstraintAction, stripSqlComments } from "../src/data/importSQL/common.js";
 
 describe("SQL import parser helpers", () => {
   it("strips line and block comments without touching quoted literals or identifiers", () => {

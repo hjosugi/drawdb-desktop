@@ -3,15 +3,15 @@ import ExcelJS from "exceljs";
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { pathToFileURL } from "node:url";
-import { buildWorkbook } from "../overlay/src/utils/excel/build.js";
-import { workbookToDiagram } from "../overlay/src/utils/excel/parse.js";
-import { assertValidDdbDiagram, parseDdb, serializeDdb, validateDdbDiagram } from "../overlay/src/utils/ddb.js";
-import { toMySQL } from "../overlay/src/data/exportSQL/mysqlEnhanced.js";
-import { toOracle } from "../overlay/src/data/exportSQL/oracle.js";
-import { toPostgres } from "../overlay/src/data/exportSQL/postgres.js";
-import { fromMySQL } from "../overlay/src/data/importSQL/mysqlEnhanced.js";
-import { fromOracle } from "../overlay/src/data/importSQL/oracle.js";
-import { fromPostgres } from "../overlay/src/data/importSQL/postgres.js";
+import { buildWorkbook } from "../src/utils/excel/build.js";
+import { workbookToDiagram } from "../src/utils/excel/parse.js";
+import { assertValidDdbDiagram, parseDdb, serializeDdb, validateDdbDiagram } from "../src/utils/ddb.js";
+import { toMySQL } from "../src/data/exportSQL/mysqlEnhanced.js";
+import { toOracle } from "../src/data/exportSQL/oracle.js";
+import { toPostgres } from "../src/data/exportSQL/postgres.js";
+import { fromMySQL } from "../src/data/importSQL/mysqlEnhanced.js";
+import { fromOracle } from "../src/data/importSQL/oracle.js";
+import { fromPostgres } from "../src/data/importSQL/postgres.js";
 
 const DIALECTS = {
   mysql: { export: toMySQL, import: fromMySQL },
@@ -133,7 +133,8 @@ function requiredFormat(value, flagName) {
 
 function resolveDialect(value) {
   if (!value) throw new Error("--dialect is required for SQL import/export");
-  const dialect = value.toLowerCase();
+  const raw = value.toLowerCase();
+  const dialect = ({ postgresql: "postgres", oraclesql: "oracle" })[raw] ?? raw;
   if (!DIALECTS[dialect]) throw new Error(`--dialect must be one of: ${Object.keys(DIALECTS).join(", ")}`);
   return dialect;
 }

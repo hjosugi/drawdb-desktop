@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
-import { SAMPLE_ROW_LIMIT, buildWorkbook, inferColumnType, workbookToDiagram } from "../overlay/src/utils/excelIO.js";
+import { SAMPLE_ROW_LIMIT, buildWorkbook, inferColumnType, workbookToDiagram } from "../src/utils/excelIO.js";
 import { makeShopDiagram } from "./fixtures/shopDiagram.mjs";
 
 describe("Excel I/O", () => {
