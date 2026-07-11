@@ -413,12 +413,17 @@ describe("shipped JSON config", () => {
     const releaseWorkflow = readFileSync(".github/workflows/release.yml", "utf8");
     const upstream = readFileSync("UPSTREAM.md", "utf8");
     const contributing = readFileSync("CONTRIBUTING.md", "utf8");
+    const snapshotHelper = readFileSync("scripts/update-upstream-snapshot.sh", "utf8");
     const baseRevision = "b24ad20b6588b9b99609e8a03b87efa7b28cf245";
 
     expect(upstream).toContain("drawdb-io/drawdb");
     expect(upstream).toContain(baseRevision);
     expect(contributing).toContain("git remote add upstream https://github.com/drawdb-io/drawdb.git");
-    expect(contributing).toContain("git merge --no-ff upstream/main");
+    expect(contributing).toContain("scripts/update-upstream-snapshot.sh upstream/main");
+    expect(contributing).toContain("Never bypass");
+    expect(snapshotHelper).toContain("git commit-tree");
+    expect(snapshotHelper).toContain("Upstream-Commit:");
+    expect(snapshotHelper).not.toContain("git merge --no-ff upstream/main");
     expect(ciWorkflow).not.toContain("repository: khsuzan/drawDB-App");
     expect(ciWorkflow).toContain("npm audit --omit=dev --audit-level=high");
     expect(releaseWorkflow).not.toContain("base_repo");

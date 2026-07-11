@@ -33,17 +33,20 @@ git remote add upstream https://github.com/drawdb-io/drawdb.git
 git fetch upstream
 ```
 
-Then merge a reviewed upstream revision instead of copying files:
+Then import a reviewed upstream revision through the exact-tree snapshot
+helper instead of copying files or merging credential-bearing historical
+blobs:
 
 ```sh
 git switch main
 git fetch upstream
-git merge --no-ff upstream/main
+scripts/update-upstream-snapshot.sh upstream/main
 ```
 
 When resolving conflicts, preserve the desktop integration in `src/desktop/`,
 the `FilePathProvider` in `src/main.jsx`, the desktop hooks in `Workspace.jsx`
-and `ControlPanel.jsx`, and the Tauri application in `src-tauri/`. Run every
+and `ControlPanel.jsx`, and the Tauri application in `src-tauri/`. Never bypass
+GitHub Push Protection for upstream history. Run every
 local check above, exercise the desktop validation matrix, and update the
 baseline recorded in `UPSTREAM.md` in the same change.
 
