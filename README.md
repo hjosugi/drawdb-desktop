@@ -1,3 +1,6 @@
+<!-- i18n: language-switcher -->
+[English](README.md) | [日本語](README.ja.md)
+
 <p align="center">
   <img src="assets/icon.png" width="96" alt="drawDB Desktop icon">
 </p>

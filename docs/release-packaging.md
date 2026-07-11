@@ -1,3 +1,6 @@
+<!-- i18n: language-switcher -->
+[English](release-packaging.md) | [日本語](release-packaging.ja.md)
+
 # Release packaging policy
 
 This project publishes GitHub Release artifacts from `.github/workflows/release.yml`.

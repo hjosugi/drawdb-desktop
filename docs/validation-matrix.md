@@ -1,3 +1,6 @@
+<!-- i18n: language-switcher -->
+[English](validation-matrix.md) | [日本語](validation-matrix.ja.md)
+
 # Release validation matrix
 
 This matrix records what the release workflow proves automatically and what must
