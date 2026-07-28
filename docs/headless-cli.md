@@ -1,3 +1,6 @@
+<!-- i18n: language-switcher -->
+[English](headless-cli.md) | [日本語](headless-cli.ja.md)
+
 # Headless CLI
 
 `scripts/drawdb-cli.mjs` converts drawDB files without starting Tauri or the
