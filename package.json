@@ -24,7 +24,9 @@
     "test:i18n": "vitest run tests/i18n.test.mjs",
     "test:sql": "vitest run tests/sql.test.mjs tests/import-sql.test.mjs tests/import-sql-common.test.mjs tests/export-sql.edge.test.mjs tests/export-sql.snap.test.mjs",
     "test:excel": "vitest run tests/excel.test.mjs",
-    "icons": "python3 scripts/generate_icons.py"
+    "icons": "python3 scripts/generate_icons.py",
+    "graphify:setup": "sh scripts/graphify.sh setup",
+    "graphify:update": "sh scripts/graphify.sh update"
   },
   "engines": {
     "node": ">=20.19"
