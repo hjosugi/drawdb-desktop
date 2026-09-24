@@ -23,6 +23,7 @@ import {
 } from "../utils/history.js";
 import { t } from "../i18n/index.js";
 import { createDiagramId, ddbFingerprint, usableDiagramId } from "./diagram.js";
+import { recordRecentFile } from "./recentFiles.js";
 import { registerDesktopRuntime } from "./runtime.js";
 import { useDesktopEditorState } from "./useDesktopEditorState.js";
 
@@ -94,6 +95,7 @@ export function useDesktopWorkspace({
       const imported = await importFromPack(path, { merge: true });
       if (imported.diagramIds[0]) await openPersistedDiagram(imported.diagramIds[0]);
       clearFilePath();
+      await recordRecentFile(path);
       return;
     }
 
@@ -119,6 +121,7 @@ export function useDesktopWorkspace({
     }
     const result = await persistAndApplyDiagram(diagram);
     setFilePath(path, result.diagramId);
+    await recordRecentFile(path);
   }, [clearFilePath, flushAssociatedFile, openPersistedDiagram, persistAndApplyDiagram, setFilePath]);
 
   const saveBeforeExit = useCallback(async () => {
@@ -137,6 +140,7 @@ export function useDesktopWorkspace({
     await writeDiagram(path, diagram, "save");
     if (!usableDiagramId(current.diagramId)) await persistAndApplyDiagram(diagram);
     associated.setFile(path, diagram.diagramId);
+    await recordRecentFile(path);
     return true;
   }, [flushAssociatedFile, persistAndApplyDiagram, writeDiagram]);
 

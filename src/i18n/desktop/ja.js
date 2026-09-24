@@ -22,6 +22,12 @@ export default Object.freeze({
   "menu.languageJapanese": "言語: 日本語",
   "menu.checkUpdates": "更新を確認...",
   "menu.desktopFiles": "デスクトップファイル",
+  "menu.recentFiles": "最近使ったファイル",
+
+  "recent.empty": "最近使ったファイルはありません",
+  "recent.missing": "見つかりません",
+  "recent.clear": "履歴をクリア",
+  "recent.notFound": "ファイルが見つからないため、最近使ったファイルから削除しました: {path}",
 
   "history.title": "ローカル履歴",
   "history.close": "閉じる",

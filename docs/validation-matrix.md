@@ -33,6 +33,10 @@ For each target that requires manual release validation, record results in issue
 - Launch and new diagram creation.
 - `.ddb` save and open through the dialog.
 - `.ddbpack` save and open.
+- Open a `.ddb` outside Documents/Desktop/Downloads, restart the app, and
+  reopen it with one click from File > Recent Files; then move or delete a
+  remembered file and confirm it is marked "Not found" and removed with an
+  error toast when selected.
 - `.ddb`, `.ddbpack`, and `.xlsx` double-click association from installed
   `.deb` and `.rpm` packages when the app is closed and already running.
 - On both Intel and Apple Silicon macOS, open `.ddb` and `.xlsx` with the app

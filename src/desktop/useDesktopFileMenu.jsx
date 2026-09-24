@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Toast } from "@douyinfe/semi-ui";
 import HistoryBrowser from "../components/HistoryBrowser.jsx";
 import { setLocale, t } from "../i18n/index.js";
 import {
@@ -21,6 +22,13 @@ import {
   normalizeEditorDatabase,
   usableDiagramId,
 } from "./diagram.js";
+import {
+  clearRecentFiles,
+  prepareRecentFile,
+  recentFilesMenuItems,
+  recordRecentFile,
+  useRecentFiles,
+} from "./recentFiles.js";
 import { flushDesktopFile, openDesktopPath } from "./runtime.js";
 import { useDesktopEditorState } from "./useDesktopEditorState.js";
 
@@ -39,6 +47,7 @@ export function useDesktopFileMenu({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(null);
   const available = desktopAvailable();
+  const recentFiles = useRecentFiles();
 
   const runAction = useCallback(async (action, errorTitle = t("error.desktopIntegration")) => {
     try {
@@ -84,6 +93,7 @@ export function useDesktopFileMenu({
       }
       filePath.setFile(path, payload.diagramId);
       setLastSaved?.(new Date().toLocaleString());
+      await recordRecentFile(path);
       return true;
     }, t("error.saveFailed"));
     return result === true;
@@ -141,8 +151,27 @@ export function useDesktopFileMenu({
     if (path) {
       const { exportAllToPack } = await import("../utils/ddbpack.js");
       await exportAllToPack(path);
+      await recordRecentFile(path);
     }
   }, t("error.saveFailed")), [runAction]);
+
+  const openRecent = useCallback(async (path) => {
+    try {
+      const stored = await prepareRecentFile(path);
+      await openDesktopPath(stored || path);
+    } catch (error) {
+      if (error?.code === "RECENT_FILE_NOT_FOUND") {
+        Toast.error(t("recent.notFound", { path }));
+        return;
+      }
+      await showDesktopError(error?.message || String(error), t("error.openFailed"));
+    }
+  }, []);
+
+  const clearRecent = useCallback(() => runAction(
+    () => clearRecentFiles(),
+    t("error.desktopIntegration"),
+  ), [runAction]);
 
   const checkUpdates = useCallback(async (manual = false) => {
     setLocale(i18n.language === "jp" ? "ja" : i18n.language);
@@ -210,17 +239,29 @@ export function useDesktopFileMenu({
         { name: t("menu.checkUpdates"), function: () => checkUpdates(true) },
       ],
     },
+    desktop_recent_files: {
+      name: t("menu.recentFiles"),
+      function: () => {},
+      children: recentFilesMenuItems(recentFiles, {
+        t,
+        onOpen: openRecent,
+        onClear: clearRecent,
+      }),
+    },
   } : {}, [
     available,
     changeLanguage,
     checkUpdates,
+    clearRecent,
     exportExcel,
     exportPack,
     exportSql,
     importPack,
     openDdb,
     openExcel,
+    openRecent,
     openSql,
+    recentFiles,
     saveDdb,
   ]);
 

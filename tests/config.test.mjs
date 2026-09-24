@@ -164,7 +164,7 @@ describe("shipped JSON config", () => {
     expect(lib).toContain("fn frontend_ready");
     expect(lib).toContain("OpenFileQueue");
     expect(lib).toContain("app.fs_scope().allow_file(&path)");
-    expect(lib).toContain("tauri::generate_handler![frontend_ready, request_app_exit]");
+    expect(lib).toMatch(/tauri::generate_handler!\[\s*frontend_ready,\s*request_app_exit,/);
     expect(lib).not.toContain("thread::sleep");
     expect(lib).not.toContain("Duration::from_millis(700)");
     expect(listenIndex).toBeGreaterThanOrEqual(0);
@@ -192,6 +192,31 @@ describe("shipped JSON config", () => {
     expect(lib).toContain("tauri::RunEvent::ExitRequested");
     expect(lib).toContain('app.emit("app-exit-requested"');
     expect(lib).toContain("fn request_app_exit");
+  });
+
+  it("persists Recent Files in the backend and re-grants only remembered paths", () => {
+    const lib = readFileSync("src-tauri/src/lib.rs", "utf8");
+    const recent = readFileSync("src-tauri/src/recent_files.rs", "utf8");
+    const workspace = readFileSync("src/desktop/useDesktopWorkspace.js", "utf8");
+    const fileMenu = readFileSync("src/desktop/useDesktopFileMenu.jsx", "utf8");
+
+    for (const command of [
+      "recent_files_list",
+      "recent_files_add",
+      "recent_files_prepare_open",
+      "recent_files_remove",
+      "recent_files_clear",
+    ]) {
+      expect(lib).toContain(`recent_files::${command}`);
+    }
+    expect(lib).toContain("app.manage(recent_files::init(app.handle()))");
+    expect(recent).toContain("pub const MAX_RECENT_FILES: usize = 10;");
+    expect(recent).toContain("app.fs_scope().is_allowed(&path)");
+    expect(recent).toContain(".allow_file(&stored)");
+    expect(recent).toContain("app_config_dir()");
+    expect(workspace.match(/recordRecentFile\(path\)/g)).toHaveLength(3);
+    expect(fileMenu).toContain("recentFilesMenuItems(recentFiles");
+    expect(fileMenu).toContain("RECENT_FILE_NOT_FOUND");
   });
 
   it("enables Tauri window state persistence for desktop builds", () => {

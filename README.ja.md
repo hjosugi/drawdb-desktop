@@ -20,6 +20,8 @@ overlay コピーや手動 patch なしで直接 build できます。
 - Excel `.xlsx` import / export
 - Oracle / MySQL / PostgreSQL DDL import / export
 - 圧縮ローカル履歴、保持設定、破損 `.ddb` からの復旧
+- 最近使ったファイル（直近 10 件の `.ddb` / `.ddbpack` を再起動後も保持。存在しない
+  ファイルは表示で区別し、選択時に履歴から削除）
 - Windows / macOS / Linux のファイル関連付けと single-instance open-file
 - autosave と「保存 / 保存せず終了 / キャンセル」の終了確認（Cmd+Q 等を含む）
 - 署名付き Tauri updater、起動時確認、手動更新確認

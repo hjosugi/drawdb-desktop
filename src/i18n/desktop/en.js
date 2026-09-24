@@ -22,6 +22,12 @@ export default Object.freeze({
   "menu.languageJapanese": "Language: Japanese",
   "menu.checkUpdates": "Check for Updates...",
   "menu.desktopFiles": "Desktop Files",
+  "menu.recentFiles": "Recent Files",
+
+  "recent.empty": "No recent files",
+  "recent.missing": "Not found",
+  "recent.clear": "Clear Recent Files",
+  "recent.notFound": "The file no longer exists and was removed from Recent Files: {path}",
 
   "history.title": "Local History",
   "history.close": "Close",

@@ -1,3 +1,5 @@
+mod recent_files;
+
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 use tauri_plugin_fs::FsExt;
@@ -160,7 +162,15 @@ pub fn run() {
     }
     builder
         .manage(OpenFileQueue::default())
-        .invoke_handler(tauri::generate_handler![frontend_ready, request_app_exit])
+        .invoke_handler(tauri::generate_handler![
+            frontend_ready,
+            request_app_exit,
+            recent_files::recent_files_list,
+            recent_files::recent_files_add,
+            recent_files::recent_files_prepare_open,
+            recent_files::recent_files_remove,
+            recent_files::recent_files_clear
+        ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
@@ -170,6 +180,7 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            app.manage(recent_files::init(app.handle()));
             let argv: Vec<String> = std::env::args().collect();
             for path in extract_file_args(&argv) {
                 queue_open_file(app.handle(), path);

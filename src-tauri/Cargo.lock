@@ -967,6 +967,7 @@ dependencies = [
 name = "drawdb-desktop"
 version = "1.8.0"
 dependencies = [
+ "log",
  "serde",
  "serde_json",
  "tauri",

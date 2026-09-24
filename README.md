@@ -22,6 +22,8 @@ build directly—there is no overlay checkout or manual patch step.
 - Excel `.xlsx` import/export
 - Oracle, MySQL, and PostgreSQL DDL import/export
 - Local compressed history with retention controls and corrupt-file recovery
+- Recent Files menu (last 10 `.ddb` / `.ddbpack` documents, kept across
+  restarts; missing files are flagged and dropped when selected)
 - File associations and single-instance open-file routing on Windows, macOS,
   and Linux
 - Autosave with a three-way Save / Discard / Cancel close guard, including
