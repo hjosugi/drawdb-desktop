@@ -55,10 +55,10 @@ export async function onAppExitRequested(handler) {
   });
 }
 
-export async function pickOpen(kind = "ddb") {
+export async function pickOpen(kind = "ddb", title = undefined) {
   if (!isTauri()) return null;
   const { open } = await dlg();
-  return await open({ multiple: false, filters: filters(kind) });
+  return await open({ multiple: false, filters: filters(kind), ...(title ? { title } : {}) });
 }
 
 export async function pickSave(defaultName, kind = "ddb") {

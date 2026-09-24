@@ -36,6 +36,8 @@ export function shouldInstallNativeMenu(nav = globalThis.navigator) {
 export const DESKTOP_MENU_ACTIONS = Object.freeze([
   "app.checkUpdates",
   "file.clearRecent",
+  "file.compareFiles",
+  "file.compareWithFile",
   "file.exportExcel",
   "file.exportPack",
   "file.exportSqlMssql",
@@ -154,6 +156,8 @@ export function buildNativeMenuModel({
       ]),
       separator(),
       item("file.history", tr("menu.history")),
+      item("file.compareWithFile", tr("menu.compareWithFile")),
+      item("file.compareFiles", tr("menu.compareFiles")),
       separator(),
       predefined("CloseWindow", tr("nativeMenu.closeWindow")),
     ]),

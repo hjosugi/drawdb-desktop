@@ -21,6 +21,9 @@ overlay コピーや手動 patch なしで直接 build できます。
 - Oracle / MySQL / PostgreSQL / SQL Server (T-SQL) DDL import / export（共通ダイアレクトコア。
   [`docs/sql-dialects.ja.md`](docs/sql-dialects.ja.md) 参照）
 - 圧縮ローカル履歴、保持設定、破損 `.ddb` からの復旧
+- 開いているダイアグラムと `.ddb`（または 2 ファイル間）のスキーマ比較。追加 / 削除 /
+  変更の一覧、破壊的変更の警告、PostgreSQL / MySQL / MariaDB / SQL Server / Oracle /
+  SQLite 向けの up / down マイグレーション SQL
 - macOS のネイティブメニューバー（アプリ / ファイル / 編集 / 表示 / ウインドウ /
   ヘルプ）と標準ショートカット。Windows / Linux は drawDB のウインドウ内メニューを
   唯一のメニューバーとし、Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S / Ctrl+W

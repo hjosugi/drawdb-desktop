@@ -23,6 +23,9 @@ build directly—there is no overlay checkout or manual patch step.
 - Oracle, MySQL, PostgreSQL, and SQL Server (T-SQL) DDL import/export built on a shared dialect
   core (see [`docs/sql-dialects.md`](docs/sql-dialects.md))
 - Local compressed history with retention controls and corrupt-file recovery
+- Schema comparison between the open diagram and a `.ddb` file (or two files)
+  with added/removed/changed lists, destructive-change warnings, and up/down
+  migration SQL for PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, and SQLite
 - Native macOS menu bar (application, File, Edit, View, Window, Help) with
   standard shortcuts; Windows and Linux keep drawDB's in-window menu as the
   single menu bar, with Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S / Ctrl+W

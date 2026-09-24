@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Toast } from "@douyinfe/semi-ui";
 import HistoryBrowser from "../components/HistoryBrowser.jsx";
+import SchemaDiffViewer from "../components/SchemaDiffViewer.jsx";
 import { setLocale, t } from "../i18n/index.js";
 import {
+  assertValidDdbDiagram,
   closeCurrentWindow,
   desktopAvailable,
+  parseDdb,
   pickOpen,
   pickSave,
   readTextFile,
@@ -32,6 +35,7 @@ import {
 import { DesktopError, ErrorCode, notifyError } from "./errors.js";
 import { openLogFolder } from "./logging.js";
 import { desktopLocale, desktopPlatform } from "./nativeMenu.js";
+import { resolveDialect } from "./schemaDiff.js";
 import {
   createExclusiveRunner,
   flushDesktopFile,
@@ -52,6 +56,7 @@ export function useDesktopFileMenu({
     persistAndApplyDiagram,
   } = useDesktopEditorState({ diagramId, title, setTitle, setLastSaved });
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [comparison, setComparison] = useState(null);
   const [updateProgress, setUpdateProgress] = useState(null);
   const available = desktopAvailable();
   const recentFiles = useRecentFiles();
@@ -189,6 +194,45 @@ export function useDesktopFileMenu({
     t("error.desktopIntegration"),
   ), [runAction]);
 
+  const readDiagramFile = useCallback(async (path) => {
+    const diagram = assertValidDdbDiagram(parseDdb(await readTextFile(path)));
+    return { diagram, label: fileNameWithoutExtension(path) + ".ddb" };
+  }, []);
+
+  // Old schema = chosen file, new schema = the diagram being edited.
+  const compareWithFile = useCallback(async () => runAction(async () => {
+    const path = await pickOpen("ddb");
+    if (!path) return;
+    const older = await readDiagramFile(path);
+    setComparison({
+      from: older.diagram,
+      to: currentDiagram,
+      fromLabel: older.label,
+      toLabel: t("diff.currentDiagram"),
+      dialect: resolveDialect(currentDiagram.database),
+    });
+  }, t("error.openFailed"), "ddb"), [currentDiagram, readDiagramFile, runAction]);
+
+  const compareFiles = useCallback(async () => runAction(async () => {
+    const olderPath = await pickOpen("ddb", t("diff.pickOld"));
+    if (!olderPath) return;
+    const newerPath = await pickOpen("ddb", t("diff.pickNew"));
+    if (!newerPath) return;
+    const [older, newer] = await Promise.all([readDiagramFile(olderPath), readDiagramFile(newerPath)]);
+    setComparison({
+      from: older.diagram,
+      to: newer.diagram,
+      fromLabel: older.label,
+      toLabel: newer.label,
+      dialect: resolveDialect(newer.diagram.database),
+    });
+  }, t("error.openFailed"), "ddb"), [readDiagramFile, runAction]);
+
+  const saveMigration = useCallback(async (script, dialect) => runAction(async () => {
+    const path = await pickSave(`${safeFileName(currentDiagram.name)}_migration_${dialect}.sql`, "sql");
+    if (path) await writeTextFile(path, script);
+  }, t("error.saveFailed")), [currentDiagram.name, runAction]);
+
   const openLogs = useCallback(() => runAction(
     () => openLogFolder(),
     t("error.desktopIntegration"),
@@ -257,6 +301,8 @@ export function useDesktopFileMenu({
           { name: tr("menu.importPack"), function: importPack },
           { name: tr("menu.exportPack"), function: exportPack },
           { name: tr("menu.history"), function: () => setHistoryOpen(true) },
+          { name: tr("menu.compareWithFile"), function: compareWithFile },
+          { name: tr("menu.compareFiles"), function: compareFiles },
           { divider: true },
           { name: tr("menu.languageEnglish"), function: () => changeLanguage("en") },
           { name: tr("menu.languageJapanese"), function: () => changeLanguage("ja") },
@@ -280,6 +326,8 @@ export function useDesktopFileMenu({
     changeLanguage,
     checkUpdates,
     clearRecent,
+    compareFiles,
+    compareWithFile,
     exportExcel,
     exportPack,
     exportSql,
@@ -303,6 +351,8 @@ export function useDesktopFileMenu({
     "file.exportSqlPostgres": () => exportSql("postgres"),
     "file.exportSqlMssql": () => exportSql("mssql"),
     "file.history": () => setHistoryOpen(true),
+    "file.compareWithFile": compareWithFile,
+    "file.compareFiles": compareFiles,
     "file.importExcel": openExcel,
     "file.importPack": importPack,
     "file.importSql": openSql,
@@ -312,6 +362,8 @@ export function useDesktopFileMenu({
   }), [
     checkUpdates,
     clearRecent,
+    compareFiles,
+    compareWithFile,
     exportExcel,
     exportPack,
     exportSql,
@@ -325,6 +377,13 @@ export function useDesktopFileMenu({
 
   const overlays = available ? (
     <>
+      {comparison ? (
+        <SchemaDiffViewer
+          comparison={comparison}
+          onSave={saveMigration}
+          onClose={() => setComparison(null)}
+        />
+      ) : null}
       {historyOpen ? (
         <HistoryBrowser
           currentDiagram={currentDiagram}
