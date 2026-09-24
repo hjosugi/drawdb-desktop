@@ -21,7 +21,7 @@ node scripts/drawdb-cli.mjs import --from xlsx tables.xlsx -o schema.ddb
 
 | 方向 | フォーマット | 備考 |
 | --- | --- | --- |
-| `.ddb`からSQLへ | `--to sql` | `--dialect mysql`、`--dialect oracle`、または`--dialect postgres`が必要です。 |
+| `.ddb`からSQLへ | `--to sql` | `--dialect mysql`、`--dialect oracle`、`--dialect postgres`、または`--dialect mssql`（SQL Server。別名 `sqlserver`、`tsql`）が必要です。 |
 | `.ddb`からExcelへ | `--to xlsx` | `src/utils/excel/build.js`のスタイル付きワークブックビルダーを使用します。 |
 | SQLから`.ddb`へ | `--from sql` | SQL方言が必要です。既存のSQLテストで使用されているDDLのサポートされたサブセットをインポートします。 |
 | Excelから`.ddb`へ | `--from xlsx` | ワークブックの解析と500行の型推論サンプル制限を使用します。 |

@@ -6,9 +6,11 @@ import { pathToFileURL } from "node:url";
 import { buildWorkbook } from "../src/utils/excel/build.js";
 import { workbookToDiagram } from "../src/utils/excel/parse.js";
 import { assertValidDdbDiagram, parseDdb, serializeDdb, validateDdbDiagram } from "../src/utils/ddb.js";
+import { toMSSQL } from "../src/data/exportSQL/mssql.js";
 import { toMySQL } from "../src/data/exportSQL/mysqlEnhanced.js";
 import { toOracle } from "../src/data/exportSQL/oracle.js";
 import { toPostgres } from "../src/data/exportSQL/postgres.js";
+import { fromMSSQL } from "../src/data/importSQL/mssql.js";
 import { fromMySQL } from "../src/data/importSQL/mysqlEnhanced.js";
 import { fromOracle } from "../src/data/importSQL/oracle.js";
 import { fromPostgres } from "../src/data/importSQL/postgres.js";
@@ -17,6 +19,7 @@ const DIALECTS = {
   mysql: { export: toMySQL, import: fromMySQL },
   oracle: { export: toOracle, import: fromOracle },
   postgres: { export: toPostgres, import: fromPostgres },
+  mssql: { export: toMSSQL, import: fromMSSQL },
 };
 
 const FORMATS = new Set(["sql", "xlsx"]);
@@ -134,7 +137,13 @@ function requiredFormat(value, flagName) {
 function resolveDialect(value) {
   if (!value) throw new Error("--dialect is required for SQL import/export");
   const raw = value.toLowerCase();
-  const dialect = ({ postgresql: "postgres", oraclesql: "oracle" })[raw] ?? raw;
+  const dialect = ({
+    postgresql: "postgres",
+    oraclesql: "oracle",
+    sqlserver: "mssql",
+    transactsql: "mssql",
+    tsql: "mssql",
+  })[raw] ?? raw;
   if (!DIALECTS[dialect]) throw new Error(`--dialect must be one of: ${Object.keys(DIALECTS).join(", ")}`);
   return dialect;
 }
@@ -180,5 +189,5 @@ Formats:
   sql, xlsx
 
 Dialects:
-  mysql, oracle, postgres`);
+  mysql, oracle, postgres, mssql (aliases: sqlserver, tsql)`);
 }

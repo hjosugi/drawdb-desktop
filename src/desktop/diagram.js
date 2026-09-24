@@ -96,6 +96,9 @@ export function ddbFingerprint(diagram) {
 }
 
 export function detectSqlDialect(text) {
+  if (/\bIDENTITY\s*\(\s*\d+\s*,\s*\d+\s*\)|\bNVARCHAR\b|\bUNIQUEIDENTIFIER\b|\bDATETIME2\b|\bsp_addextendedproperty\b|\[dbo\]|^\s*GO\s*$/im.test(text)) {
+    return "mssql";
+  }
   if (/\b(SERIAL|BIGSERIAL|SMALLSERIAL|BYTEA|JSONB)\b|AS\s+ENUM|nextval\(|::[a-z]/i.test(text)) {
     return "postgres";
   }

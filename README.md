@@ -20,7 +20,7 @@ build directly—there is no overlay checkout or manual patch step.
 - Native `.ddb` files with deterministic, diff-friendly JSON
 - `.ddbpack` project import/export
 - Excel `.xlsx` import/export
-- Oracle, MySQL, and PostgreSQL DDL import/export built on a shared dialect
+- Oracle, MySQL, PostgreSQL, and SQL Server (T-SQL) DDL import/export built on a shared dialect
   core (see [`docs/sql-dialects.md`](docs/sql-dialects.md))
 - Local compressed history with retention controls and corrupt-file recovery
 - Native macOS menu bar (application, File, Edit, View, Window, Help) with

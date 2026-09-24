@@ -64,6 +64,19 @@ FK）、テーブルレベルの `FOREIGN KEY`、`ALTER TABLE ... ADD CONSTRAINT
 （`GEOMETRY`、`POINT`、`LINESTRING`、`POLYGON`、各 `MULTI*`、`GEOMETRYCOLLECTION`）は
 MySQL ではそのまま、Oracle では `SDO_GEOMETRY` として出力します。
 
+## SQL Server (T-SQL)
+
+`exportSQL/mssql.js` は共通コア上の差分定義だけで実装しています。`[角括弧]` 識別子、
+`N'...'` リテラル、`NVARCHAR`/`NCHAR`/`DATETIME2`/`UNIQUEIDENTIFIER`/`BIT`/
+`VARBINARY(MAX)` への型マッピング、`IDENTITY(1,1)`、ENUM は `CHECK ([col] IN (...))`、
+生成列は `AS (expr) [PERSISTED]`、コメントは `sp_addextendedproperty` の
+`MS_Description`、参照動作は SQL Server が対応するもののみ（`RESTRICT` なし）です。
+`importSQL/mssql.js` はこの出力と SSMS の「テーブルをスクリプト化」出力（`GO` 区切り、
+`dbo.` 接頭辞、`CLUSTERED ... WITH (...) ON [PRIMARY]`、`ALTER TABLE ... ADD DEFAULT
+... FOR`、`WITH CHECK ADD CONSTRAINT ... FOREIGN KEY`、名前付き / 位置指定の拡張
+プロパティ）を読み込みます。drawDB の複合型に相当する T-SQL の型はない（テーブル型は
+別概念）ため、複合型は出力しません。
+
 ## ダイアレクトの追加手順
 
 1. `src/data/exportSQL/<dialect>.js` に凍結したダイアレクト定義と

@@ -265,7 +265,7 @@ export function applyCommentStatements(source, tableMap, { qualified, ident }, u
 /** Adds CREATE [UNIQUE] INDEX statements to their tables. */
 export function applyIndexStatements(source, tableMap, { qualified }, unquote) {
   const createIndex = new RegExp(
-    `CREATE\\s+(UNIQUE\\s+)?(?:NONCLUSTERED\\s+|CLUSTERED\\s+)?INDEX\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(${qualified})\\s+ON\\s+(${qualified})\\s*(?:USING\\s+\\w+\\s*)?\\(([^)]+)\\)\\s*;`,
+    `CREATE\\s+(UNIQUE\\s+)?(?:NONCLUSTERED\\s+|CLUSTERED\\s+)?INDEX\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(${qualified})\\s+ON\\s+(${qualified})\\s*(?:USING\\s+\\w+\\s*)?\\(([^)]+)\\)\\s*(?:WITH\\s*\\([^)]*\\)\\s*)?(?:ON\\s+${qualified}\\s*)?(?:;|\\bGO\\b)`,
     "gi",
   );
   eachMatch(createIndex, source, (m) => {

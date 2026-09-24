@@ -69,6 +69,20 @@ MySQL spatial types (`GEOMETRY`, `POINT`, `LINESTRING`, `POLYGON`, their
 `MULTI*` forms, and `GEOMETRYCOLLECTION`) are exported unchanged for MySQL and as
 `SDO_GEOMETRY` for Oracle.
 
+## SQL Server (T-SQL)
+
+`exportSQL/mssql.js` is a pure dialect definition on the shared core:
+`[bracket]` identifiers, `N'...'` literals, `NVARCHAR`/`NCHAR`/`DATETIME2`/
+`UNIQUEIDENTIFIER`/`BIT`/`VARBINARY(MAX)` type mapping, `IDENTITY(1,1)`,
+enums as `CHECK ([col] IN (...))`, computed columns as `AS (expr) [PERSISTED]`,
+comments as `sp_addextendedproperty` `MS_Description` properties, and
+`ON DELETE/UPDATE` limited to the actions SQL Server supports (no `RESTRICT`).
+`importSQL/mssql.js` reads that output and SSMS "Script Table as" scripts
+(`GO` separators, `dbo.` prefixes, `CLUSTERED ... WITH (...) ON [PRIMARY]`,
+`ALTER TABLE ... ADD DEFAULT ... FOR`, `WITH CHECK ADD CONSTRAINT ... FOREIGN
+KEY`, positional or named extended properties). drawDB composite types have no
+T-SQL equivalent (table types are a different concept) and are not exported.
+
 ## Adding a dialect
 
 1. Create `src/data/exportSQL/<dialect>.js` exporting a frozen dialect

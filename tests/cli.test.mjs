@@ -51,6 +51,15 @@ describe("drawdb headless CLI", () => {
     const validated = runCli(["validate", out]);
     expect(validated.status).toBe(0);
     expect(validated.stdout).toContain("valid .ddb");
+
+    const mssql = join(dir, "shop-mssql.sql");
+    const mssqlOut = join(dir, "shop-mssql.ddb");
+    expect(runCli(["export", "--to", "sql", "--dialect", "sqlserver", input, "-o", mssql]).status).toBe(0);
+    expect(readFileSync(mssql, "utf8")).toContain("CREATE TABLE [users]");
+    expect(runCli(["import", "--from", "sql", "--dialect", "mssql", mssql, "-o", mssqlOut]).status).toBe(0);
+    const fromMssql = parseDdb(readFileSync(mssqlOut, "utf8"));
+    expect(fromMssql.tables.map((table) => table.name)).toEqual(["users", "orders"]);
+    expect(fromMssql.relationships).toHaveLength(1);
   });
 
   it("exports .ddb to Excel and imports Excel back to .ddb", () => {

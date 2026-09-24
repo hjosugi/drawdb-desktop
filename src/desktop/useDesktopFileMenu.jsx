@@ -252,6 +252,7 @@ export function useDesktopFileMenu({
           { name: tr("menu.exportSqlOracle"), function: () => exportSql("oracle") },
           { name: tr("menu.exportSqlMySQL"), function: () => exportSql("mysql") },
           { name: tr("menu.exportSqlPostgres"), function: () => exportSql("postgres") },
+          { name: tr("menu.exportSqlMssql"), function: () => exportSql("mssql") },
           { divider: true },
           { name: tr("menu.importPack"), function: importPack },
           { name: tr("menu.exportPack"), function: exportPack },
@@ -300,6 +301,7 @@ export function useDesktopFileMenu({
     "file.exportSqlMySQL": () => exportSql("mysql"),
     "file.exportSqlOracle": () => exportSql("oracle"),
     "file.exportSqlPostgres": () => exportSql("postgres"),
+    "file.exportSqlMssql": () => exportSql("mssql"),
     "file.history": () => setHistoryOpen(true),
     "file.importExcel": openExcel,
     "file.importPack": importPack,
@@ -371,6 +373,10 @@ function safeFileName(value) {
 }
 
 async function importSql(dialect, sql) {
+  if (dialect === "mssql") {
+    const { fromMSSQL } = await import("../data/importSQL/mssql.js");
+    return fromMSSQL(sql);
+  }
   if (dialect === "oracle") {
     const { fromOracle } = await import("../data/importSQL/oracle.js");
     return fromOracle(sql);
@@ -384,6 +390,10 @@ async function importSql(dialect, sql) {
 }
 
 async function exportSqlText(dialect, diagram) {
+  if (dialect === "mssql") {
+    const { toMSSQL } = await import("../data/exportSQL/mssql.js");
+    return toMSSQL(diagram);
+  }
   if (dialect === "oracle") {
     const { toOracle } = await import("../data/exportSQL/oracle.js");
     return toOracle(diagram);
