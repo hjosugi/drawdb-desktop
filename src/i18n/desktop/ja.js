@@ -116,5 +116,6 @@ export default Object.freeze({
   "error.title": "drawDB Desktop エラー",
   "error.openFailed": "ファイルを開けませんでした",
   "error.saveFailed": "ファイルを保存できませんでした",
+  "error.autosaveFailed": "自動保存に失敗しました",
   "error.desktopIntegration": "デスクトップ統合エラー",
 });

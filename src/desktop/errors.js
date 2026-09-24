@@ -122,3 +122,33 @@ export async function notifyError(error, { title, kind, show } = {}) {
   await present(described.message, title ?? translate("error.title"));
   return described;
 }
+
+/**
+ * Reports the first failure of a repeating background task (autosave) and
+ * stays quiet until the task succeeds again, so a failing disk produces one
+ * dialog instead of one per keystroke. Every failure is still logged.
+ * @param {(error: unknown) => unknown} notify
+ */
+export function createFailureReporter(notify) {
+  let failing = false;
+  return {
+    /** @param {unknown} error */
+    report(error) {
+      if (failing) {
+        console.error("drawDB background task failed again:", error);
+        return false;
+      }
+      failing = true;
+      void Promise.resolve()
+        .then(() => notify(error))
+        .catch((failure) => console.error("drawDB could not report a failure:", failure));
+      return true;
+    },
+    reset() {
+      failing = false;
+    },
+    get failing() {
+      return failing;
+    },
+  };
+}

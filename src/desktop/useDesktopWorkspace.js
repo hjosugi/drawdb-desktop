@@ -25,7 +25,7 @@ import {
 } from "../utils/history.js";
 import { t } from "../i18n/index.js";
 import { createDiagramId, ddbFingerprint, usableDiagramId } from "./diagram.js";
-import { notifyError } from "./errors.js";
+import { createFailureReporter, notifyError } from "./errors.js";
 import { recordRecentFile } from "./recentFiles.js";
 import { registerDesktopRuntime } from "./runtime.js";
 import { useDesktopEditorState } from "./useDesktopEditorState.js";
@@ -77,10 +77,20 @@ export function useDesktopWorkspace({
 
   const fileSaverRef = useRef(null);
   if (!fileSaverRef.current) {
+    // Background autosave failures are shown once per failure streak; the
+    // error is kept by the saver and surfaces again on explicit flush/save.
+    const autosaveFailures = createFailureReporter((error) =>
+      notifyError(error, { title: t("error.autosaveFailed") }));
     fileSaverRef.current = makeAutoSaver(async (diagram) => {
       const associated = stateRef.current.filePath;
       if (!associated.path || associated.kind !== "ddb") return;
-      await writeDiagram(associated.path, diagram, "autosave");
+      try {
+        await writeDiagram(associated.path, diagram, "autosave");
+        autosaveFailures.reset();
+      } catch (error) {
+        autosaveFailures.report(error);
+        throw error;
+      }
     }, 800);
   }
 

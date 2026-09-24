@@ -204,3 +204,36 @@ describe(".ddbpack reading and recovery", () => {
     expect(text).toContain("- manifest.json: manifest.json is missing");
   });
 });
+
+describe("background failure reporting", () => {
+  it("notifies once per failure streak and again after a success", async () => {
+    const { createFailureReporter } = await import("../src/desktop/errors.js");
+    const notify = vi.fn();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const reporter = createFailureReporter(notify);
+
+    expect(reporter.report(new Error("disk full"))).toBe(true);
+    expect(reporter.report(new Error("disk full"))).toBe(false);
+    await Promise.resolve();
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(reporter.failing).toBe(true);
+
+    reporter.reset();
+    expect(reporter.report(new Error("read-only"))).toBe(true);
+    await Promise.resolve();
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(error).toHaveBeenCalledWith("drawDB background task failed again:", expect.any(Error));
+    error.mockRestore();
+  });
+
+  it("logs when the notification itself fails", async () => {
+    const { createFailureReporter } = await import("../src/desktop/errors.js");
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    createFailureReporter(() => {
+      throw new Error("dialog closed");
+    }).report(new Error("x"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(error).toHaveBeenCalledWith("drawDB could not report a failure:", expect.any(Error));
+    error.mockRestore();
+  });
+});
