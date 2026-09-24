@@ -34,6 +34,7 @@
       ]
     },
     "opener:allow-reveal-item-in-dir",
+    "log:default",
     "process:default",
     "updater:default",
     "window-state:default",

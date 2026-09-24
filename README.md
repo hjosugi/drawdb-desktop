@@ -32,6 +32,8 @@ build directly—there is no overlay checkout or manual patch step.
   and Linux
 - Autosave with a three-way Save / Discard / Cancel close guard, including
   application-level quit requests
+- Rotated local log files with panic backtraces and frontend error capture,
+  reachable from "Open Log Folder" (see [`docs/logging.md`](docs/logging.md))
 - Signed Tauri updater metadata with startup and manual update checks
 - EN/JA desktop messages
 

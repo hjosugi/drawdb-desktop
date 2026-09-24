@@ -86,6 +86,8 @@ export async function requestAppExit() {
 
 export async function showDesktopError(message, title = t("error.title")) {
   if (!isTauri()) return;
+  // Every user-facing failure is also recorded in the desktop log file.
+  console.error(`${title}: ${message}`);
   const { message: showMessage } = await dlg();
   await showMessage(String(message), { title, kind: "error" });
 }

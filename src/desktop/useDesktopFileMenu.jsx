@@ -30,6 +30,7 @@ import {
   recordRecentFile,
   useRecentFiles,
 } from "./recentFiles.js";
+import { openLogFolder } from "./logging.js";
 import { desktopLocale, desktopPlatform } from "./nativeMenu.js";
 import {
   createExclusiveRunner,
@@ -183,6 +184,11 @@ export function useDesktopFileMenu({
     t("error.desktopIntegration"),
   ), [runAction]);
 
+  const openLogs = useCallback(() => runAction(
+    () => openLogFolder(),
+    t("error.desktopIntegration"),
+  ), [runAction]);
+
   const checkUpdates = useCallback(async (manual = false) => {
     setLocale(i18n.language === "jp" ? "ja" : i18n.language);
     const { checkForAppUpdates } = await import("../utils/appUpdates.js");
@@ -247,6 +253,7 @@ export function useDesktopFileMenu({
         { name: t("menu.languageEnglish"), function: () => changeLanguage("en") },
         { name: t("menu.languageJapanese"), function: () => changeLanguage("ja") },
         { name: t("menu.checkUpdates"), function: () => checkUpdates(true) },
+        { name: t("menu.openLogFolder"), function: openLogs },
       ],
     },
     desktop_recent_files: {
@@ -269,6 +276,7 @@ export function useDesktopFileMenu({
     importPack,
     openDdb,
     openExcel,
+    openLogs,
     openRecent,
     openSql,
     recentFiles,
@@ -289,6 +297,7 @@ export function useDesktopFileMenu({
     "file.importSql": openSql,
     "file.open": openDdb,
     "file.openRecent": openRecent,
+    "help.openLogs": openLogs,
   }), [
     checkUpdates,
     clearRecent,
@@ -298,6 +307,7 @@ export function useDesktopFileMenu({
     importPack,
     openDdb,
     openExcel,
+    openLogs,
     openRecent,
     openSql,
   ]);

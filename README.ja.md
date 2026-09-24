@@ -28,6 +28,8 @@ overlay コピーや手動 patch なしで直接 build できます。
   ファイルは表示で区別し、選択時に履歴から削除）
 - Windows / macOS / Linux のファイル関連付けと single-instance open-file
 - autosave と「保存 / 保存せず終了 / キャンセル」の終了確認（Cmd+Q 等を含む）
+- ローテーション付きローカルログ（panic のバックトレースとフロントエンドのエラーも記録）。
+  「ログフォルダを開く」から取り出し可能（[`docs/logging.ja.md`](docs/logging.ja.md)）
 - 署名付き Tauri updater、起動時確認、手動更新確認
 - デスクトップ固有メッセージの英語 / 日本語対応
 

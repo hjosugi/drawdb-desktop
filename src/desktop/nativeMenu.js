@@ -46,6 +46,7 @@ export const DESKTOP_MENU_ACTIONS = Object.freeze([
   "file.importSql",
   "file.open",
   "file.openRecent",
+  "help.openLogs",
 ]);
 
 export const NATIVE_MENU_EDITOR_ACTIONS = Object.freeze([
@@ -172,6 +173,8 @@ export function buildNativeMenuModel({
       item("help.docs", tr("nativeMenu.docs")),
       item("help.shortcuts", tr("nativeMenu.shortcuts")),
       item("help.reportBug", tr("nativeMenu.reportBug")),
+      separator(),
+      item("help.openLogs", tr("menu.openLogFolder")),
     ], { role: "help" }),
   ];
 }

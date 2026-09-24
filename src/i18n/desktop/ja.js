@@ -21,6 +21,7 @@ export default Object.freeze({
   "menu.languageEnglish": "言語: 英語",
   "menu.languageJapanese": "言語: 日本語",
   "menu.checkUpdates": "更新を確認...",
+  "menu.openLogFolder": "ログフォルダを開く",
   "menu.desktopFiles": "デスクトップファイル",
   "menu.recentFiles": "最近使ったファイル",
 

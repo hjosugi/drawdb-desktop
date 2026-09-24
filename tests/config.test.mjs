@@ -219,6 +219,32 @@ describe("shipped JSON config", () => {
     expect(fileMenu).toContain("RECENT_FILE_NOT_FOUND");
   });
 
+  it("writes rotated local logs, records panics, and bridges frontend errors", () => {
+    const pkg = readJson("package.json");
+    const cargoToml = readFileSync("src-tauri/Cargo.toml", "utf8");
+    const capabilities = readJson("src-tauri/capabilities/default.json");
+    const lib = readFileSync("src-tauri/src/lib.rs", "utf8");
+    const logging = readFileSync("src-tauri/src/logging.rs", "utf8");
+    const main = readFileSync("src/main.jsx", "utf8");
+
+    expect(pkg.dependencies["@tauri-apps/plugin-log"]).toBe("2.9.2");
+    expect(cargoToml).toContain('tauri-plugin-log = "2"');
+    expect(capabilities.permissions).toContain("log:default");
+    expect(lib).toContain("logging::install_panic_hook();");
+    expect(lib).toContain("tauri::Builder::default().plugin(logging::plugin())");
+    expect(lib).toContain("logging::open_log_dir");
+    expect(lib).not.toContain("eprintln!");
+    expect(logging).toContain("TargetKind::LogDir");
+    expect(logging).toContain("RotationStrategy::KeepSome(KEPT_LOG_FILES)");
+    expect(logging).toContain("std::panic::set_hook");
+    expect(logging).not.toMatch(/sentry/i);
+    expect(main.indexOf("installFrontendLogBridge()")).toBeGreaterThanOrEqual(0);
+    expect(main.indexOf("installFrontendLogBridge()"))
+      .toBeLessThan(main.indexOf("ReactDOM.createRoot"));
+    expect(existsSync("docs/logging.md")).toBe(true);
+    expect(existsSync("docs/logging.ja.md")).toBe(true);
+  });
+
   it("enables Tauri window state persistence for desktop builds", () => {
     const cargoToml = readFileSync("src-tauri/Cargo.toml", "utf8");
     const capabilities = readJson("src-tauri/capabilities/default.json");

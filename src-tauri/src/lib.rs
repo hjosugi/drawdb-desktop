@@ -1,3 +1,4 @@
+mod logging;
 mod recent_files;
 
 use std::sync::Mutex;
@@ -81,7 +82,7 @@ fn queue_open_file(app: &tauri::AppHandle, path: String) {
     // delivered by Finder/Explorer, the Dock, or the single-instance callback
     // are not. Grant only this already extension-validated file.
     if let Err(error) = app.fs_scope().allow_file(&path) {
-        eprintln!("failed to grant filesystem scope for {path}: {error}");
+        log::error!("failed to grant filesystem scope for an opened file: {error}");
         return;
     }
     if app.state::<OpenFileQueue>().push(path.clone()) {
@@ -134,7 +135,9 @@ fn migrations() -> Vec<Migration> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default();
+    logging::install_panic_hook();
+    // Register logging first so records from the other plugins' setup are kept.
+    let mut builder = tauri::Builder::default().plugin(logging::plugin());
     #[cfg(desktop)]
     {
         builder = builder
@@ -169,7 +172,8 @@ pub fn run() {
             recent_files::recent_files_add,
             recent_files::recent_files_prepare_open,
             recent_files::recent_files_remove,
-            recent_files::recent_files_clear
+            recent_files::recent_files_clear,
+            logging::open_log_dir
         ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -180,6 +184,12 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            log::info!(
+                "drawDB {} starting on {} {}",
+                app.package_info().version,
+                std::env::consts::OS,
+                std::env::consts::ARCH
+            );
             app.manage(recent_files::init(app.handle()));
             let argv: Vec<String> = std::env::args().collect();
             for path in extract_file_args(&argv) {
