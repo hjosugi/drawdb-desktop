@@ -151,6 +151,7 @@ mod tests {
         assert!(records
             .iter()
             .any(|record| record.contains("intentional test panic")
-                && record.contains("src/logging.rs")));
+                // Windows reports the location as src\logging.rs.
+                && record.contains("logging.rs:")));
     }
 }
