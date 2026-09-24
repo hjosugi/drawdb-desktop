@@ -36,6 +36,11 @@ export interface Field {
   values?: string[];
   /** MySQL ON UPDATE expression. */
   onUpdate?: string;
+  /**
+   * Generated (computed) column. `stored` selects STORED vs VIRTUAL where the
+   * database distinguishes them.
+   */
+  generated?: { expression: string; stored?: boolean };
 }
 
 export interface Index {

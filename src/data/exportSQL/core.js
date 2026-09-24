@@ -17,6 +17,12 @@ export const sqlStringLiteral = (value) => `'${String(value).replace(/'/g, "''")
 
 export const hasDefault = (field) => field.default !== "" && field.default != null;
 
+/**
+ * Generated-column expression, or "" for ordinary columns.
+ * @param {import("../../types/drawdb").Field} field
+ */
+export const generatedExpression = (field) => String(field.generated?.expression ?? "").trim();
+
 export const upperType = (field, fallback) => String(field.type || fallback).toUpperCase();
 
 /** Maps lower-cased enum names to their definitions (first one wins). */

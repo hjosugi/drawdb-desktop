@@ -3,6 +3,7 @@
 import {
   addRelationship,
   applyCommentStatements,
+  extractGeneratedColumn,
   applyIndexStatements,
   eachMatch,
   identifierPattern,
@@ -99,7 +100,8 @@ function parseTableBody(name, body, id, pendingFks) {
     const notNull = /NOT\s+NULL/.test(upper);
     const unique = /\bUNIQUE\b/.test(upper);
     const increment = /AS\s+IDENTITY/.test(upper);
-    const defM = rest.match(/\bDEFAULT\s+('(?:[^']|'')*'|[^\s']+(?:\([^)]*\))?)(?=\s+(?:NOT\s+NULL|NULL|PRIMARY|UNIQUE|GENERATED|CONSTRAINT|CHECK|REFERENCES)\b|\s*$)/i);
+    const generated = extractGeneratedColumn(rest);
+    const defM = generated ? null : rest.match(/\bDEFAULT\s+('(?:[^']|'')*'|[^\s']+(?:\([^)]*\))?)(?=\s+(?:NOT\s+NULL|NULL|PRIMARY|UNIQUE|GENERATED|CONSTRAINT|CHECK|REFERENCES)\b|\s*$)/i);
     const def = defM ? stripStringLiteral(defM[1]) : "";
     const { baseType, size } = splitType(type);
     const inlineFk = rest.match(RE_INLINE_FK);
@@ -117,6 +119,7 @@ function parseTableBody(name, body, id, pendingFks) {
       id: fields.length, name: colName, type: baseType.toUpperCase(),
       size, notNull, primary: isPK, unique, increment,
       default: def, comment: "", check: "",
+      ...(generated ? { generated } : {}),
     });
   }
   markPrimaryKeys(fields, pkCols);

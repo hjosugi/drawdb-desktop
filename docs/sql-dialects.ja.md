@@ -50,6 +50,20 @@
 FK）、テーブルレベルの `FOREIGN KEY`、`ALTER TABLE ... ADD CONSTRAINT` の外部キーを
 取り込みます。
 
+## 生成列と空間データ型
+
+`generated: { expression, stored }` を持つフィールドは生成列（計算列）です。
+
+| ダイアレクト | エクスポート | インポート |
+| --- | --- | --- |
+| MySQL | `GENERATED ALWAYS AS (expr) STORED` / `VIRTUAL` | 両形式と `GENERATED ALWAYS` を省略した `AS (expr)` |
+| PostgreSQL | `GENERATED ALWAYS AS (expr) STORED`（PostgreSQL 18 より前の唯一の形式） | `stored: true` |
+| Oracle | `GENERATED ALWAYS AS (expr) VIRTUAL`（Oracle に STORED 形式はない） | `stored: false` |
+
+生成列には `DEFAULT`、`AUTO_INCREMENT`、`SERIAL` を付けません。MySQL の空間データ型
+（`GEOMETRY`、`POINT`、`LINESTRING`、`POLYGON`、各 `MULTI*`、`GEOMETRYCOLLECTION`）は
+MySQL ではそのまま、Oracle では `SDO_GEOMETRY` として出力します。
+
 ## ダイアレクトの追加手順
 
 1. `src/data/exportSQL/<dialect>.js` に凍結したダイアレクト定義と

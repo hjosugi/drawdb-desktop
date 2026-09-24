@@ -280,3 +280,36 @@ export function applyIndexStatements(source, tableMap, { qualified }, unquote) {
     });
   });
 }
+
+/**
+ * Extracts a generated-column clause: `[GENERATED ALWAYS] AS (expr)
+ * [VIRTUAL | STORED | PERSISTENT]`. Identity columns (`AS IDENTITY`) are not
+ * generated columns and return null.
+ * @param {string} definition text after the column name
+ * @returns {{ expression: string, stored: boolean } | null}
+ */
+export function extractGeneratedColumn(definition) {
+  const text = String(definition);
+  // Ignore "AS (" inside string literals such as COMMENT 'a AS (b)'.
+  const masked = text.replace(/'(?:[^']|'')*'/g, (literal) => " ".repeat(literal.length));
+  const start = masked.match(/\b(?:GENERATED\s+ALWAYS\s+)?AS\s*\(/i);
+  if (!start || start.index === undefined) return null;
+  let depth = 0;
+  let quote = "";
+  const open = start.index + start[0].length - 1;
+  for (let index = open; index < text.length; index++) {
+    const ch = text[index];
+    if (quote) {
+      if (ch === quote) quote = "";
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === "`") quote = ch;
+    else if (ch === "(") depth++;
+    else if (ch === ")" && --depth === 0) {
+      const expression = text.slice(open + 1, index).trim();
+      const storage = text.slice(index + 1).match(/^\s*(VIRTUAL|STORED|PERSISTENT)\b/i);
+      return { expression, stored: /^(STORED|PERSISTENT)$/i.test(storage?.[1] || "") };
+    }
+  }
+  return null;
+}

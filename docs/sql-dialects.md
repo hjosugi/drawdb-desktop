@@ -54,6 +54,21 @@ patterns and type normalization. All three parsers accept inline column
 `REFERENCES`, table-level `FOREIGN KEY`, and `ALTER TABLE ... ADD CONSTRAINT`
 foreign keys.
 
+## Generated columns and spatial types
+
+A field with `generated: { expression, stored }` is a computed column:
+
+| Dialect | Export | Import |
+| --- | --- | --- |
+| MySQL | `GENERATED ALWAYS AS (expr) STORED` / `VIRTUAL` | both forms, and `AS (expr)` without `GENERATED ALWAYS` |
+| PostgreSQL | `GENERATED ALWAYS AS (expr) STORED` (the only form before PostgreSQL 18) | `stored: true` |
+| Oracle | `GENERATED ALWAYS AS (expr) VIRTUAL` (Oracle has no stored form) | `stored: false` |
+
+Generated columns never carry `DEFAULT`, `AUTO_INCREMENT`, or `SERIAL`.
+MySQL spatial types (`GEOMETRY`, `POINT`, `LINESTRING`, `POLYGON`, their
+`MULTI*` forms, and `GEOMETRYCOLLECTION`) are exported unchanged for MySQL and as
+`SDO_GEOMETRY` for Oracle.
+
 ## Adding a dialect
 
 1. Create `src/data/exportSQL/<dialect>.js` exporting a frozen dialect

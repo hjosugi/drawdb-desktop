@@ -3,6 +3,7 @@
 import {
   addRelationship,
   eachMatch,
+  extractGeneratedColumn,
   identifierPattern,
   makeImportedTable,
   markPrimaryKeys,
@@ -110,7 +111,8 @@ function parseTable(name, body, id, pendingFks) {
     const increment = /\bAUTO_INCREMENT\b/.test(upper);
     const isPK      = /\bPRIMARY KEY\b/.test(upper);
     const unique    = /\bUNIQUE\b/.test(upper) && !isPK;
-    const defM = rest.match(/DEFAULT\s+('(?:[^']|'')*'|[^\s,]+)/i);
+    const generated = extractGeneratedColumn(rest);
+    const defM = generated ? null : rest.match(/DEFAULT\s+('(?:[^']|'')*'|[^\s,]+)/i);
     const def  = defM ? stripStringLiteral(defM[1]) : "";
     const cmtM = rest.match(/COMMENT\s+'((?:[^']|'')*)'/i);
     const cmt  = cmtM ? cmtM[1].replace(/''/g, "'") : "";
@@ -132,7 +134,8 @@ function parseTable(name, body, id, pendingFks) {
     }
     fields.push({ id: fields.length, name: colName, type, size,
       notNull, primary: isPK, unique, increment,
-      default: def, comment: cmt, check: "", values });
+      default: def, comment: cmt, check: "", values,
+      ...(generated ? { generated } : {}) });
   }
   markPrimaryKeys(fields, pkCols);
   return makeImportedTable({ id, name, fields, indices });

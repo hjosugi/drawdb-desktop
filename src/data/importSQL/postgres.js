@@ -6,6 +6,7 @@
 import {
   addRelationship,
   applyCommentStatements,
+  extractGeneratedColumn,
   applyIndexStatements,
   eachMatch,
   identifierPattern,
@@ -105,7 +106,8 @@ function parseTableBody(name, body, id, enumMap, pendingFks) {
     const isPK = /\bPRIMARY\s+KEY\b/.test(upper);
     const notNull = /\bNOT\s+NULL\b/.test(upper) || norm.increment;
     const unique = /\bUNIQUE\b/.test(upper) && !isPK;
-    const defM = rest.match(/DEFAULT\s+('(?:[^']|'')*'|[^\s,]+)/i);
+    const generated = extractGeneratedColumn(rest);
+    const defM = generated ? null : rest.match(/DEFAULT\s+('(?:[^']|'')*'|[^\s,]+)/i);
     const def = defM ? stripPostgresDefault(defM[1]) : "";
     const inlineFk = rest.match(RE_INLINE_FK);
     if (inlineFk) {
@@ -123,6 +125,7 @@ function parseTableBody(name, body, id, enumMap, pendingFks) {
       notNull, primary: isPK, unique, increment: !!norm.increment,
       default: def, comment: "", check: "",
       ...(norm.values ? { values: norm.values } : {}),
+      ...(generated ? { generated } : {}),
     });
   }
   markPrimaryKeys(fields, pkCols);

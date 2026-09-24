@@ -3,6 +3,7 @@
 import {
   commentOnStatements,
   generateDdl,
+  generatedExpression,
   hasDefault,
   quoteWith,
   sqlStringLiteral,
@@ -106,9 +107,17 @@ export const postgresDialect = Object.freeze({
     } else {
       typeStr = columnType(f);
     }
+    const expression = generatedExpression(f);
+    // Generated columns cannot be SERIAL or carry a DEFAULT. STORED is the
+    // form supported by every PostgreSQL release with generated columns (12+).
+    if (expression) typeStr = typeStr.replace(/^(SMALL|BIG)?SERIAL$/, (_m, size) =>
+      size === "SMALL" ? "SMALLINT" : size === "BIG" ? "BIGINT" : "INTEGER");
     const serial = /SERIAL$/.test(typeStr);
     let sql = typeStr;
-    if (!serial) {
+    if (expression) {
+      sql += ` GENERATED ALWAYS AS (${expression}) STORED`;
+      if (f.notNull) sql += " NOT NULL";
+    } else if (!serial) {
       if (hasDefault(f)) sql += ` DEFAULT ${formatDefault(f)}`;
       if (f.notNull) sql += " NOT NULL";
     }

@@ -1,6 +1,13 @@
 // @ts-check
 // Enhanced MySQL SQL exporter for drawDB (dialect definition for core.js)
-import { enumValues, generateDdl, hasDefault, quoteWith, upperType } from "./core.js";
+import {
+  enumValues,
+  generateDdl,
+  generatedExpression,
+  hasDefault,
+  quoteWith,
+  upperType,
+} from "./core.js";
 
 const SAFE = quoteWith("`");
 const SAFE_LIT = (s) => "'" + String(s).replace(/\\/g, "\\\\").replace(/'/g, "''") + "'";
@@ -10,7 +17,9 @@ const TYPE_PASSTHRU = new Set([
   "VARCHAR","CHAR","TEXT","LONGTEXT","MEDIUMTEXT","TINYTEXT",
   "BLOB","LONGBLOB","MEDIUMBLOB","TINYBLOB","BINARY","VARBINARY",
   "DATE","TIME","DATETIME","TIMESTAMP","YEAR",
-  "JSON","BIT","BOOLEAN","BOOL","ENUM","SET","GEOMETRY","POINT",
+  "JSON","BIT","BOOLEAN","BOOL","ENUM","SET",
+  "GEOMETRY","POINT","LINESTRING","POLYGON",
+  "MULTIPOINT","MULTILINESTRING","MULTIPOLYGON","GEOMETRYCOLLECTION",
 ]);
 const TYPE_MAP = { VARCHAR2: "VARCHAR", NUMBER: "DECIMAL", CLOB: "LONGTEXT", BLOB: "LONGBLOB", UUID: "CHAR(36)" };
 
@@ -45,9 +54,12 @@ export const mysqlDialect = Object.freeze({
   trailer: ["", "SET FOREIGN_KEY_CHECKS=1;"],
   column(f, _table, context) {
     let sql = mapType(f, context);
+    const expression = generatedExpression(f);
+    // Generated columns take no DEFAULT or AUTO_INCREMENT.
+    if (expression) sql += ` GENERATED ALWAYS AS (${expression}) ${f.generated?.stored ? "STORED" : "VIRTUAL"}`;
     if (f.notNull) sql += " NOT NULL";
-    if (hasDefault(f)) sql += ` DEFAULT ${formatDefault(f)}`;
-    if (f.increment) sql += " AUTO_INCREMENT";
+    if (!expression && hasDefault(f)) sql += ` DEFAULT ${formatDefault(f)}`;
+    if (!expression && f.increment) sql += " AUTO_INCREMENT";
     if (f.unique && !f.primary) sql += " UNIQUE";
     if (f.onUpdate) sql += ` ON UPDATE ${f.onUpdate}`;
     if (f.comment) sql += ` COMMENT ${SAFE_LIT(f.comment)}`;
