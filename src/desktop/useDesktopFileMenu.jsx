@@ -189,16 +189,14 @@ export function useDesktopFileMenu({
     t("error.desktopIntegration"),
   ), [runAction]);
 
+  // Desktop messages follow drawDB's i18next language, so neither the
+  // update check nor the language items keep a separate desktop locale.
   const checkUpdates = useCallback(async (manual = false) => {
-    setLocale(i18n.language === "jp" ? "ja" : i18n.language);
     const { checkForAppUpdates } = await import("../utils/appUpdates.js");
     return checkForAppUpdates({ manual, onProgress: setUpdateProgress });
-  }, [i18n.language]);
+  }, []);
 
-  const changeLanguage = useCallback(async (locale) => {
-    setLocale(locale);
-    await i18n.changeLanguage(locale === "ja" ? "jp" : "en");
-  }, [i18n]);
+  const changeLanguage = useCallback((locale) => setLocale(locale), []);
 
   const restoreFromHistory = useCallback(async (payload) => {
     if (filePath.path && filePath.kind === "ddb") {
@@ -230,43 +228,49 @@ export function useDesktopFileMenu({
     return () => window.clearTimeout(timer);
   }, [available, checkUpdates]);
 
-  const fileMenu = useMemo(() => available ? {
-    desktop_files: {
-      name: t("menu.desktopFiles"),
-      function: () => {},
-      children: [
-        { name: t("menu.openDdb"), function: openDdb },
-        { name: t("menu.saveDdb"), function: () => saveDdb() },
-        { name: t("menu.saveAsDdb"), function: () => saveDdb({ saveAs: true }) },
-        { divider: true },
-        { name: t("menu.openExcel"), function: openExcel },
-        { name: t("menu.exportExcel"), function: exportExcel },
-        { name: t("menu.openSqlDdl"), function: openSql },
-        { name: t("menu.exportSqlOracle"), function: () => exportSql("oracle") },
-        { name: t("menu.exportSqlMySQL"), function: () => exportSql("mysql") },
-        { name: t("menu.exportSqlPostgres"), function: () => exportSql("postgres") },
-        { divider: true },
-        { name: t("menu.importPack"), function: importPack },
-        { name: t("menu.exportPack"), function: exportPack },
-        { name: t("menu.history"), function: () => setHistoryOpen(true) },
-        { divider: true },
-        { name: t("menu.languageEnglish"), function: () => changeLanguage("en") },
-        { name: t("menu.languageJapanese"), function: () => changeLanguage("ja") },
-        { name: t("menu.checkUpdates"), function: () => checkUpdates(true) },
-        { name: t("menu.openLogFolder"), function: openLogs },
-      ],
-    },
-    desktop_recent_files: {
-      name: t("menu.recentFiles"),
-      function: () => {},
-      children: recentFilesMenuItems(recentFiles, {
-        t,
-        onOpen: openRecent,
-        onClear: clearRecent,
-      }),
-    },
-  } : {}, [
+  const locale = desktopLocale(i18n.language);
+  const fileMenu = useMemo(() => {
+    if (!available) return {};
+    const tr = (key) => t(key, {}, locale);
+    return {
+      desktop_files: {
+        name: tr("menu.desktopFiles"),
+        function: () => {},
+        children: [
+          { name: tr("menu.openDdb"), function: openDdb },
+          { name: tr("menu.saveDdb"), function: () => saveDdb() },
+          { name: tr("menu.saveAsDdb"), function: () => saveDdb({ saveAs: true }) },
+          { divider: true },
+          { name: tr("menu.openExcel"), function: openExcel },
+          { name: tr("menu.exportExcel"), function: exportExcel },
+          { name: tr("menu.openSqlDdl"), function: openSql },
+          { name: tr("menu.exportSqlOracle"), function: () => exportSql("oracle") },
+          { name: tr("menu.exportSqlMySQL"), function: () => exportSql("mysql") },
+          { name: tr("menu.exportSqlPostgres"), function: () => exportSql("postgres") },
+          { divider: true },
+          { name: tr("menu.importPack"), function: importPack },
+          { name: tr("menu.exportPack"), function: exportPack },
+          { name: tr("menu.history"), function: () => setHistoryOpen(true) },
+          { divider: true },
+          { name: tr("menu.languageEnglish"), function: () => changeLanguage("en") },
+          { name: tr("menu.languageJapanese"), function: () => changeLanguage("ja") },
+          { name: tr("menu.checkUpdates"), function: () => checkUpdates(true) },
+          { name: tr("menu.openLogFolder"), function: openLogs },
+        ],
+      },
+      desktop_recent_files: {
+        name: tr("menu.recentFiles"),
+        function: () => {},
+        children: recentFilesMenuItems(recentFiles, {
+          t: (key, params) => t(key, params, locale),
+          onOpen: openRecent,
+          onClear: clearRecent,
+        }),
+      },
+    };
+  }, [
     available,
+    locale,
     changeLanguage,
     checkUpdates,
     clearRecent,
@@ -340,7 +344,7 @@ export function useDesktopFileMenu({
     available,
     closeWindow: closeCurrentWindow,
     fileMenu,
-    locale: desktopLocale(i18n.language),
+    locale,
     menuActions,
     // macOS shortcuts come from the native menu bar; Windows and Linux use
     // in-app hotkeys because the in-window menu is canonical there.

@@ -36,7 +36,8 @@ build directly—there is no overlay checkout or manual patch step.
 - Rotated local log files with panic backtraces and frontend error capture,
   reachable from "Open Log Folder" (see [`docs/logging.md`](docs/logging.md))
 - Signed Tauri updater metadata with startup and manual update checks
-- EN/JA desktop messages
+- EN/JA desktop messages served from the `desktop` namespace of drawDB's
+  i18next setup, so the language selector switches desktop menus and dialogs too
 
 ## Downloads
 
