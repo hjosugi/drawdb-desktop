@@ -50,8 +50,33 @@ describe("schema comparison", () => {
 
     const mysql = compareDiagrams(makeShopDiagram(), evolved(), { database: "mysql" });
     expect(mysql.dialect).toBe("mysql");
+    // MODIFY COLUMN must restate NOT NULL etc. or MySQL silently drops them.
+    expect(mysql.sql.up).toContain("ALTER TABLE `users` MODIFY COLUMN `email` VARCHAR(100) NOT NULL;");
+    expect(mysql.sql.down).toContain("ALTER TABLE `users` MODIFY COLUMN `email` VARCHAR(255) NOT NULL;");
     expect(mysql.sql.up).toContain("ALTER TABLE `users` ADD COLUMN `nickname`");
     expect(mysql.sql.up).toContain("ALTER TABLE `orders` DROP COLUMN `amount`;");
+  });
+
+  it("emits one complete MODIFY per MySQL column", async () => {
+    const { completeMysqlModify } = await import("../src/desktop/schemaDiff.js");
+    const target = {
+      tables: [{
+        name: "t",
+        fields: [field(0, "c", "INT", { notNull: true, default: "5", comment: "n", unique: true, increment: false })],
+      }],
+    };
+    const sql = completeMysqlModify([
+      "ALTER TABLE `t` MODIFY COLUMN `c` INT;",
+      "ALTER TABLE `t` MODIFY COLUMN `c` INT NOT NULL;",
+      "ALTER TABLE `t` MODIFY COLUMN `missing` INT;",
+      "ALTER TABLE `t` ADD COLUMN `d` INT;",
+    ].join("\n"), target);
+
+    expect(sql.split("\n")).toEqual([
+      "ALTER TABLE `t` MODIFY COLUMN `c` INT NOT NULL DEFAULT 5 COMMENT 'n';",
+      "ALTER TABLE `t` MODIFY COLUMN `missing` INT;",
+      "ALTER TABLE `t` ADD COLUMN `d` INT;",
+    ]);
   });
 
   it("reports no changes for identical schemas and ignores layout moves", () => {

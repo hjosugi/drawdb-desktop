@@ -11,6 +11,8 @@ import { deepDiff } from "../utils/diff.js";
 import { generateMigrationSQL } from "../utils/migrations/diffToSQL.js";
 import { normalizeDdbPayload } from "../utils/ddb.js";
 import { normalizeEditorDatabase } from "./diagram.js";
+import { mysqlDialect } from "../data/exportSQL/mysqlEnhanced.js";
+import { namedEnumMap } from "../data/exportSQL/core.js";
 
 /** Dialects the migration generator supports, in menu order. */
 export const MIGRATION_DIALECTS = Object.freeze([
@@ -241,15 +243,55 @@ export function compareDiagrams(from, to, { database } = {}) {
   const diff = {};
   deepDiff(before, after, diff, IGNORED_KEYS);
   const changes = summarizeChanges(diff);
-  const sql = changes.length
+  let sql = changes.length
     ? generateMigrationSQL(diff, dialect, { from: before, to: after })
     : { up: "", down: "" };
+  if (dialect === "mysql" || dialect === "mariadb") {
+    sql = {
+      up: completeMysqlModify(sql.up, after),
+      down: completeMysqlModify(sql.down, before),
+    };
+  }
   return {
     dialect,
     changes,
     destructive: changes.filter((change) => change.destructive),
     sql,
   };
+}
+
+/**
+ * MySQL's MODIFY COLUMN replaces the whole column definition, but the upstream
+ * generator emits only the changed attribute (e.g. `MODIFY COLUMN email
+ * VARCHAR(100)`), which silently drops NOT NULL, DEFAULT, AUTO_INCREMENT and
+ * COMMENT. Rewrite every MODIFY with the complete definition from the target
+ * schema and keep one MODIFY per column. UNIQUE is omitted because MODIFY ...
+ * UNIQUE would add a duplicate index.
+ * @param {string} sql
+ * @param {{ tables: any[], enums?: any[] }} target schema the statements migrate to
+ */
+export function completeMysqlModify(sql, target) {
+  if (!sql) return sql;
+  const context = { diagram: target, namedEnums: namedEnumMap(target) };
+  const seen = new Set();
+  const pattern = /^ALTER TABLE `((?:[^`]|``)+)` MODIFY COLUMN `((?:[^`]|``)+)` .*;$/;
+  return sql
+    .split("\n")
+    .flatMap((line) => {
+      const match = line.match(pattern);
+      if (!match) return [line];
+      const tableName = match[1].replace(/``/g, "`");
+      const columnName = match[2].replace(/``/g, "`");
+      const table = (target.tables || []).find((candidate) => candidate.name === tableName);
+      const field = table?.fields?.find((candidate) => candidate.name === columnName);
+      if (!field) return [line];
+      const key = `${lower(tableName)}.${lower(columnName)}`;
+      if (seen.has(key)) return [];
+      seen.add(key);
+      const definition = mysqlDialect.column({ ...field, unique: false }, table, context).sql;
+      return [`ALTER TABLE ${mysqlDialect.quoteIdent(tableName)} MODIFY COLUMN ${mysqlDialect.quoteIdent(columnName)} ${definition};`];
+    })
+    .join("\n");
 }
 
 /** Maps a diagram database to a dialect supported by the generator. */
