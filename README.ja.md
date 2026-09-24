@@ -20,6 +20,10 @@ overlay コピーや手動 patch なしで直接 build できます。
 - Excel `.xlsx` import / export
 - Oracle / MySQL / PostgreSQL DDL import / export
 - 圧縮ローカル履歴、保持設定、破損 `.ddb` からの復旧
+- macOS のネイティブメニューバー（アプリ / ファイル / 編集 / 表示 / ウインドウ /
+  ヘルプ）と標準ショートカット。Windows / Linux は drawDB のウインドウ内メニューを
+  唯一のメニューバーとし、Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S / Ctrl+W
+  （Linux は Ctrl+Q も）をアプリ内で処理。両メニューは同じコマンドを呼び出します。
 - 最近使ったファイル（直近 10 件の `.ddb` / `.ddbpack` を再起動後も保持。存在しない
   ファイルは表示で区別し、選択時に履歴から削除）
 - Windows / macOS / Linux のファイル関連付けと single-instance open-file

@@ -53,6 +53,13 @@ For each target that requires manual release validation, record results in issue
 - For AppImage, record whether Gear Lever, appimaged, or a manual desktop
   integration was used; automatic file association is not supported without that
   integration.
+- On macOS, confirm the native menu bar shows the drawDB application menu
+  (About, Check for Updates, Services, Hide, Quit), File (New, Open, Recent
+  Files, Save, Save As, Import, Export, Local History, Close Window), Edit,
+  View, Window, and Help; that Cmd+N/O/S/Shift+S/W/Q work exactly once; that
+  Cmd+C/V/Z still work in text fields and on the canvas; and that labels switch
+  when the language is changed. On Windows and Linux, confirm no native menu bar
+  is shown and Ctrl+N/O/S/Shift+S/W (Ctrl+Q on Linux) work once.
 - Excel export/import round-trip.
 - SQL export for Oracle, MySQL, and PostgreSQL.
 - EN/JA switching and Japanese IME input.

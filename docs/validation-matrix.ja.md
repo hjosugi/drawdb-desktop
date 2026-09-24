@@ -38,6 +38,13 @@
 - Linuxで、`xdg-mime query default application/x-drawdb`と`xdg-mime query default application/x-drawdbpack`が`drawDB.desktop`を返すことを確認し、`/usr/share/applications/drawDB.desktop`に`%F`が含まれていることを確認。
 - Ubuntu GNOMEとFedora KDEで、WaylandとX11の両セッションで関連付けの動作をテスト。
 - AppImageについて、Gear Lever、appimaged、または手動のデスクトップ統合を使用したかどうかを記録。これらの統合なしでは自動ファイル関連付けはサポートされません。
+- macOS でネイティブメニューバーにアプリメニュー（drawDB について / 更新を確認 /
+  サービス / 隠す / 終了）、ファイル（新規 / 開く / 最近使ったファイル / 保存 /
+  名前を付けて保存 / 読み込み / 書き出し / ローカル履歴 / ウインドウを閉じる）、
+  編集、表示、ウインドウ、ヘルプが並び、Cmd+N/O/S/Shift+S/W/Q が1回だけ動作し、
+  テキスト欄とキャンバスで Cmd+C/V/Z が従来どおり動き、言語切替でラベルが変わること。
+  Windows / Linux ではネイティブメニューバーが表示されず、Ctrl+N/O/S/Shift+S/W
+  （Linux は Ctrl+Q も）が1回だけ動作すること。
 - Excelのエクスポート/インポートのラウンドトリップ。
 - Oracle、MySQL、PostgreSQLへのSQLエクスポート。
 - EN/JAの切り替えと日本語IME入力。

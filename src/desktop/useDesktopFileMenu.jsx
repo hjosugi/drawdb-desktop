@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Toast } from "@douyinfe/semi-ui";
 import HistoryBrowser from "../components/HistoryBrowser.jsx";
 import { setLocale, t } from "../i18n/index.js";
 import {
+  closeCurrentWindow,
   desktopAvailable,
   pickOpen,
   pickSave,
@@ -29,7 +30,12 @@ import {
   recordRecentFile,
   useRecentFiles,
 } from "./recentFiles.js";
-import { flushDesktopFile, openDesktopPath } from "./runtime.js";
+import { desktopLocale, desktopPlatform } from "./nativeMenu.js";
+import {
+  createExclusiveRunner,
+  flushDesktopFile,
+  openDesktopPath,
+} from "./runtime.js";
 import { useDesktopEditorState } from "./useDesktopEditorState.js";
 
 export function useDesktopFileMenu({
@@ -48,15 +54,19 @@ export function useDesktopFileMenu({
   const [updateProgress, setUpdateProgress] = useState(null);
   const available = desktopAvailable();
   const recentFiles = useRecentFiles();
+  const exclusiveRef = useRef(null);
+  if (!exclusiveRef.current) exclusiveRef.current = createExclusiveRunner();
+  const platform = desktopPlatform();
 
-  const runAction = useCallback(async (action, errorTitle = t("error.desktopIntegration")) => {
-    try {
-      return await action();
-    } catch (error) {
-      await showDesktopError(error?.message || String(error), errorTitle);
-      return null;
-    }
-  }, []);
+  const runAction = useCallback(async (action, errorTitle = t("error.desktopIntegration")) =>
+    exclusiveRef.current(async () => {
+      try {
+        return await action();
+      } catch (error) {
+        await showDesktopError(error?.message || String(error), errorTitle);
+        return null;
+      }
+    }), []);
 
   const openDdb = useCallback(async () => runAction(async () => {
     const path = await pickOpen("ddb");
@@ -265,6 +275,33 @@ export function useDesktopFileMenu({
     saveDdb,
   ]);
 
+  const menuActions = useMemo(() => ({
+    "app.checkUpdates": () => checkUpdates(true),
+    "file.clearRecent": clearRecent,
+    "file.exportExcel": exportExcel,
+    "file.exportPack": exportPack,
+    "file.exportSqlMySQL": () => exportSql("mysql"),
+    "file.exportSqlOracle": () => exportSql("oracle"),
+    "file.exportSqlPostgres": () => exportSql("postgres"),
+    "file.history": () => setHistoryOpen(true),
+    "file.importExcel": openExcel,
+    "file.importPack": importPack,
+    "file.importSql": openSql,
+    "file.open": openDdb,
+    "file.openRecent": openRecent,
+  }), [
+    checkUpdates,
+    clearRecent,
+    exportExcel,
+    exportPack,
+    exportSql,
+    importPack,
+    openDdb,
+    openExcel,
+    openRecent,
+    openSql,
+  ]);
+
   const overlays = available ? (
     <>
       {historyOpen ? (
@@ -291,9 +328,17 @@ export function useDesktopFileMenu({
 
   return {
     available,
+    closeWindow: closeCurrentWindow,
     fileMenu,
+    locale: desktopLocale(i18n.language),
+    menuActions,
+    // macOS shortcuts come from the native menu bar; Windows and Linux use
+    // in-app hotkeys because the in-window menu is canonical there.
+    inAppWindowShortcuts: available && platform !== "macos",
+    inAppQuitShortcut: available && platform === "linux",
     openDdb,
     overlays,
+    recentFiles,
     saveDdb,
   };
 }

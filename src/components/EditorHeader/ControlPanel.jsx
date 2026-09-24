@@ -89,6 +89,7 @@ import { DateTime } from "luxon";
 import { appRouteUrl } from "../../desktop/navigation.js";
 import { openExternalUrl } from "../../desktop/externalLinks.js";
 import { useDesktopFileMenu } from "../../desktop/useDesktopFileMenu.jsx";
+import { useNativeMenu } from "../../desktop/nativeMenu.js";
 
 const Modal = lazy(() => import("./Modal/Modal"));
 const Sidesheet = lazy(() => import("./SideSheet/Sidesheet"));
@@ -1781,6 +1782,35 @@ export default function ControlPanel({
   });
   useHotkeys("mod+alt+w", fitWindow, { preventDefault: true });
   useHotkeys("alt+e", toggleDBMLEditor, { preventDefault: true });
+  useHotkeys("mod+n", () => setModal(MODAL.NEW), {
+    preventDefault: true,
+    enabled: desktop.inAppWindowShortcuts,
+  });
+  useHotkeys("mod+w", desktop.closeWindow, {
+    preventDefault: true,
+    enabled: desktop.inAppWindowShortcuts,
+  });
+  useHotkeys("mod+q", desktop.closeWindow, {
+    preventDefault: true,
+    enabled: desktop.inAppQuitShortcut,
+  });
+
+  useNativeMenu({
+    handlers: {
+      ...desktop.menuActions,
+      "file.new": menu.file.new.function,
+      "file.save": save,
+      "file.saveAs": saveDiagramAs,
+      "view.zoomIn": zoomIn,
+      "view.zoomOut": zoomOut,
+      "view.fitWindow": fitWindow,
+      "help.docs": menu.help.docs.function,
+      "help.shortcuts": menu.help.shortcuts.function,
+      "help.reportBug": menu.help.report_bug.function,
+    },
+    locale: desktop.locale,
+    recentFiles: desktop.recentFiles,
+  });
 
   return (
     <>

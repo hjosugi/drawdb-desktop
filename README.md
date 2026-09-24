@@ -22,6 +22,10 @@ build directly—there is no overlay checkout or manual patch step.
 - Excel `.xlsx` import/export
 - Oracle, MySQL, and PostgreSQL DDL import/export
 - Local compressed history with retention controls and corrupt-file recovery
+- Native macOS menu bar (application, File, Edit, View, Window, Help) with
+  standard shortcuts; Windows and Linux keep drawDB's in-window menu as the
+  single menu bar, with Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S / Ctrl+W
+  (and Ctrl+Q on Linux) handled in-app. Both menus call the same commands.
 - Recent Files menu (last 10 `.ddb` / `.ddbpack` documents, kept across
   restarts; missing files are flagged and dropped when selected)
 - File associations and single-instance open-file routing on Windows, macOS,
