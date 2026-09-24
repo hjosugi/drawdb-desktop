@@ -22,7 +22,7 @@
     "test:coverage": "vitest run --coverage",
     "test:config": "vitest run tests/config.test.mjs",
     "test:i18n": "vitest run tests/i18n.test.mjs",
-    "test:sql": "vitest run tests/sql.test.mjs tests/import-sql.test.mjs tests/import-sql-common.test.mjs tests/export-sql.edge.test.mjs tests/export-sql.snap.test.mjs",
+    "test:sql": "vitest run tests/sql.test.mjs tests/import-sql.test.mjs tests/import-sql-common.test.mjs tests/import-sql.regression.test.mjs tests/export-sql.edge.test.mjs tests/export-sql.snap.test.mjs tests/export-sql.regression.test.mjs",
     "test:excel": "vitest run tests/excel.test.mjs",
     "icons": "python3 scripts/generate_icons.py",
     "graphify:setup": "sh scripts/graphify.sh setup",

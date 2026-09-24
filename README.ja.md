@@ -18,7 +18,8 @@ overlay コピーや手動 patch なしで直接 build できます。
 - diff しやすい決定的 JSON の `.ddb` ファイル
 - `.ddbpack` プロジェクト import / export
 - Excel `.xlsx` import / export
-- Oracle / MySQL / PostgreSQL DDL import / export
+- Oracle / MySQL / PostgreSQL DDL import / export（共通ダイアレクトコア。
+  [`docs/sql-dialects.ja.md`](docs/sql-dialects.ja.md) 参照）
 - 圧縮ローカル履歴、保持設定、破損 `.ddb` からの復旧
 - macOS のネイティブメニューバー（アプリ / ファイル / 編集 / 表示 / ウインドウ /
   ヘルプ）と標準ショートカット。Windows / Linux は drawDB のウインドウ内メニューを
