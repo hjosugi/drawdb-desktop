@@ -199,7 +199,7 @@ exports[`SQL importer regression goldens > parses exported MySQL DDL identically
         {
           "check": "",
           "comment": "",
-          "default": "now()",
+          "default": "CURRENT_TIMESTAMP",
           "id": 11,
           "increment": false,
           "name": "last_seen",
@@ -251,10 +251,13 @@ exports[`SQL importer regression goldens > parses exported MySQL DDL identically
           "name": "role",
           "notNull": true,
           "primary": false,
-          "size": "255",
-          "type": "VARCHAR",
+          "size": "",
+          "type": "ENUM",
           "unique": false,
-          "values": undefined,
+          "values": [
+            "admin",
+            "member",
+          ],
         },
         {
           "check": "",
@@ -307,7 +310,7 @@ exports[`SQL importer regression goldens > parses exported MySQL DDL identically
             "born_at",
           ],
           "id": 0,
-          "name": "\`idx_customers_name_born\`",
+          "name": "idx_customers_name_born",
           "unique": false,
         },
         {
@@ -315,7 +318,7 @@ exports[`SQL importer regression goldens > parses exported MySQL DDL identically
             "hash",
           ],
           "id": 1,
-          "name": "\`uq_customers_hash\`",
+          "name": "uq_customers_hash",
           "unique": true,
         },
       ],
@@ -548,7 +551,7 @@ exports[`SQL importer regression goldens > parses exported MySQL DDL identically
             "email",
           ],
           "id": 0,
-          "name": "\`idx_email\`",
+          "name": "idx_email",
           "unique": true,
         },
       ],
@@ -684,7 +687,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "Shown "as is"",
-          "default": "",
+          "default": "O'Brien",
           "id": 2,
           "increment": false,
           "name": "display_name",
@@ -736,7 +739,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "",
-          "default": "",
+          "default": "-1.5",
           "id": 6,
           "increment": false,
           "name": "score",
@@ -788,7 +791,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "",
-          "default": "",
+          "default": "0",
           "id": 10,
           "increment": false,
           "name": "flag",
@@ -801,7 +804,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "",
-          "default": "",
+          "default": "CURRENT_TIMESTAMP",
           "id": 11,
           "increment": false,
           "name": "last_seen",
@@ -814,7 +817,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "",
-          "default": "",
+          "default": "NULL",
           "id": 12,
           "increment": false,
           "name": "legacy_id",
@@ -827,7 +830,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "",
-          "default": "",
+          "default": "silver",
           "id": 13,
           "increment": false,
           "name": "tier",
@@ -846,8 +849,8 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
           "name": "role",
           "notNull": true,
           "primary": false,
-          "size": "",
-          "type": "ROLE",
+          "size": "10",
+          "type": "VARCHAR2",
           "unique": false,
         },
         {
@@ -973,7 +976,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "",
-          "default": "",
+          "default": "draft",
           "id": 4,
           "increment": false,
           "name": "state",
@@ -1165,7 +1168,7 @@ exports[`SQL importer regression goldens > parses exported Oracle DDL identicall
         {
           "check": "",
           "comment": "money",
-          "default": "",
+          "default": "0.00",
           "id": 2,
           "increment": false,
           "name": "amount",

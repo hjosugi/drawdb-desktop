@@ -18,6 +18,30 @@ export const hasDefault = (field) => field.default !== "" && field.default != nu
 
 export const upperType = (field, fallback) => String(field.type || fallback).toUpperCase();
 
+/** Maps lower-cased enum names to their definitions (first one wins). */
+export function namedEnumMap(diagram) {
+  const enums = new Map();
+  (diagram.enums || []).forEach((definition) => {
+    if (!definition?.name) return;
+    const key = String(definition.name).toLowerCase();
+    if (!enums.has(key)) enums.set(key, definition);
+  });
+  return enums;
+}
+
+/**
+ * Values of an enumerated column: inline `ENUM` values, or the values of a
+ * named enum referenced as the column type. Returns null otherwise.
+ */
+export function enumValues(field, context) {
+  const type = String(field.type || "");
+  if (type.toUpperCase() === "ENUM") {
+    return Array.isArray(field.values) && field.values.length ? field.values : null;
+  }
+  const named = context?.namedEnums?.get(type.toLowerCase());
+  return Array.isArray(named?.values) && named.values.length ? named.values : null;
+}
+
 /** Resolves a relationship to table/column names, or null when dangling. */
 export function resolveRelationship(diagram, relationship) {
   const tables = diagram.tables || [];
@@ -113,7 +137,7 @@ function foreignKeyStatement(diagram, relationship, index, dialect) {
  * @param {object} dialect dialect definition
  */
 export function generateDdl(diagram, dialect) {
-  const context = dialect.createContext?.(diagram) ?? { diagram };
+  const context = { diagram, namedEnums: namedEnumMap(diagram) };
   const parts = [...headerLines(diagram, dialect), ...(dialect.preamble || [""])];
 
   if (dialect.compositeType) {

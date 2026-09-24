@@ -64,13 +64,6 @@ export const postgresDialect = Object.freeze({
   label: "PostgreSQL dialect",
   quoteIdent: SAFE,
   quoteLiteral: SAFE_LIT,
-  createContext(diagram) {
-    const namedEnums = new Map();
-    (diagram.enums || []).forEach((e) => {
-      if (e && e.name) namedEnums.set(String(e.name).toLowerCase(), e);
-    });
-    return { diagram, namedEnums };
-  },
   compositeType: (t) => {
     const cols = (t.fields || [])
       .map((f) => `  ${SAFE(f.name)} ${columnType(f)}`)

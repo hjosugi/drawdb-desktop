@@ -1,5 +1,5 @@
 // Enhanced MySQL SQL exporter for drawDB (dialect definition for core.js)
-import { generateDdl, hasDefault, quoteWith, upperType } from "./core.js";
+import { enumValues, generateDdl, hasDefault, quoteWith, upperType } from "./core.js";
 
 const SAFE = quoteWith("`");
 const SAFE_LIT = (s) => "'" + String(s).replace(/\\/g, "\\\\").replace(/'/g, "''") + "'";
@@ -13,10 +13,11 @@ const TYPE_PASSTHRU = new Set([
 ]);
 const TYPE_MAP = { VARCHAR2: "VARCHAR", NUMBER: "DECIMAL", CLOB: "LONGTEXT", BLOB: "LONGBLOB", UUID: "CHAR(36)" };
 
-function mapType(f) {
+function mapType(f, context) {
   const upper = upperType(f, "VARCHAR");
   let base = TYPE_MAP[upper] || upper;
-  if (base === "ENUM" && Array.isArray(f.values)) return `ENUM(${f.values.map(SAFE_LIT).join(",")})`;
+  const values = enumValues(f, context);
+  if (values) return `ENUM(${values.map(SAFE_LIT).join(",")})`;
   if (base === "SET"  && Array.isArray(f.values)) return `SET(${f.values.map(SAFE_LIT).join(",")})`;
   if (!TYPE_PASSTHRU.has(base) && !["VARCHAR2","NUMBER","CLOB","BLOB","UUID"].includes(upper)) base = "VARCHAR";
   if (["VARCHAR","CHAR","BINARY","VARBINARY"].includes(base)) return `${base}(${Number(f.size) || 255})`;
@@ -27,10 +28,10 @@ function mapType(f) {
 
 function formatDefault(f) {
   const v = String(f.default);
-  if (v === "CURRENT_TIMESTAMP") return "CURRENT_TIMESTAMP";
+  if (/^(CURRENT_TIMESTAMP|now\(\))$/i.test(v)) return "CURRENT_TIMESTAMP";
   if (/^-?\d+(\.\d+)?$/.test(v)) return v;
   if (/^(true|false)$/i.test(v)) return v.toLowerCase();
-  if (v === "NULL") return "NULL";
+  if (v.toUpperCase() === "NULL") return "NULL";
   return SAFE_LIT(v);
 }
 
@@ -41,8 +42,8 @@ export const mysqlDialect = Object.freeze({
   quoteLiteral: SAFE_LIT,
   preamble: ["SET FOREIGN_KEY_CHECKS=0;", ""],
   trailer: ["", "SET FOREIGN_KEY_CHECKS=1;"],
-  column(f) {
-    let sql = mapType(f);
+  column(f, _table, context) {
+    let sql = mapType(f, context);
     if (f.notNull) sql += " NOT NULL";
     if (hasDefault(f)) sql += ` DEFAULT ${formatDefault(f)}`;
     if (f.increment) sql += " AUTO_INCREMENT";

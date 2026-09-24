@@ -94,7 +94,7 @@ function parseTableBody(name, body, id, pendingFks) {
     const notNull = /NOT\s+NULL/.test(upper);
     const unique = /\bUNIQUE\b/.test(upper);
     const increment = /AS\s+IDENTITY/.test(upper);
-    const defM = rest.match(/DEFAULT\s+([^,\s]+(?:\s+[^,\s]+)*?)(?=\s+(?:NOT|PRIMARY|UNIQUE|GENERATED|$))/i);
+    const defM = rest.match(/\bDEFAULT\s+('(?:[^']|'')*'|[^\s']+(?:\([^)]*\))?)(?=\s+(?:NOT\s+NULL|NULL|PRIMARY|UNIQUE|GENERATED|CONSTRAINT|CHECK|REFERENCES)\b|\s*$)/i);
     const def = defM ? stripStringLiteral(defM[1]) : "";
     const { baseType, size } = splitType(type);
     const inlineFk = rest.match(RE_INLINE_FK);

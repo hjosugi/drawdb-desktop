@@ -76,7 +76,7 @@ function parseTable(name, body, id, pendingFks) {
     }
     if (/^(UNIQUE\s+)?KEY\s+/i.test(line)) {
       const ix = line.match(new RegExp(`^(UNIQUE\\s+)?KEY\\s+(${MYSQL_IDENT})\\s*\\(([^)]+)\\)`, "i"));
-      if (ix) indices.push({ id: indices.length, name: ix[2],
+      if (ix) indices.push({ id: indices.length, name: unq(ix[2]),
         fields: splitCols(ix[3]), unique: !!ix[1] });
       continue;
     }

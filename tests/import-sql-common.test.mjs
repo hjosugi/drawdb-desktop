@@ -76,6 +76,22 @@ describe("shared SQL import helpers", () => {
 });
 
 describe("dialect parsers built on the shared helpers", () => {
+  it("keeps commas inside Oracle string defaults in one column", async () => {
+    const { fromOracle } = await import("../src/data/importSQL/oracle.js");
+    const result = fromOracle(`
+      CREATE TABLE "notes" (
+        "id" NUMBER(10) NOT NULL,
+        "tags" VARCHAR2(50) DEFAULT 'a,b',
+        CONSTRAINT "pk_notes" PRIMARY KEY ("id")
+      );
+    `);
+
+    expect(result.tables[0].fields.map((field) => [field.name, field.default])).toEqual([
+      ["id", ""],
+      ["tags", "a,b"],
+    ]);
+  });
+
   it("skips mysqldump statements it does not model", async () => {
     const { fromMySQL } = await import("../src/data/importSQL/mysqlEnhanced.js");
     const result = fromMySQL(`
