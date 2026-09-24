@@ -10,7 +10,6 @@ import {
   pickSave,
   readTextFile,
   serializeDdb,
-  showDesktopError,
   writeTextFile,
 } from "../utils/desktopIO.js";
 import {
@@ -30,6 +29,7 @@ import {
   recordRecentFile,
   useRecentFiles,
 } from "./recentFiles.js";
+import { DesktopError, ErrorCode, notifyError } from "./errors.js";
 import { openLogFolder } from "./logging.js";
 import { desktopLocale, desktopPlatform } from "./nativeMenu.js";
 import {
@@ -59,12 +59,16 @@ export function useDesktopFileMenu({
   if (!exclusiveRef.current) exclusiveRef.current = createExclusiveRunner();
   const platform = desktopPlatform();
 
-  const runAction = useCallback(async (action, errorTitle = t("error.desktopIntegration")) =>
+  const runAction = useCallback(async (
+    action,
+    errorTitle = t("error.desktopIntegration"),
+    kind = undefined,
+  ) =>
     exclusiveRef.current(async () => {
       try {
         return await action();
       } catch (error) {
-        await showDesktopError(error?.message || String(error), errorTitle);
+        await notifyError(error, { title: errorTitle, kind });
         return null;
       }
     }), []);
@@ -72,7 +76,7 @@ export function useDesktopFileMenu({
   const openDdb = useCallback(async () => runAction(async () => {
     const path = await pickOpen("ddb");
     if (path) await openDesktopPath(path);
-  }, t("error.openFailed")), [runAction]);
+  }, t("error.openFailed"), "ddb"), [runAction]);
 
   const saveDdb = useCallback(async ({ saveAs = false } = {}) => {
     if (!available) return false;
@@ -120,7 +124,7 @@ export function useDesktopFileMenu({
   const openExcel = useCallback(async () => runAction(async () => {
     const path = await pickOpen("xlsx");
     if (path) await openDesktopPath(path);
-  }, t("error.openFailed")), [runAction]);
+  }, t("error.openFailed"), "xlsx"), [runAction]);
 
   const exportExcel = useCallback(async () => runAction(async () => {
     const path = await pickSave(`${safeFileName(currentDiagram.name)}.xlsx`, "xlsx");
@@ -137,6 +141,7 @@ export function useDesktopFileMenu({
     const sql = await readTextFile(path);
     const dialect = detectSqlDialect(sql);
     const parsed = await importSql(dialect, sql);
+    if (parsed.tables.length === 0) throw new DesktopError(ErrorCode.SQL_NO_TABLES);
     await persistAndApplyDiagram({
       ...parsed,
       database: normalizeEditorDatabase(dialect),
@@ -145,7 +150,7 @@ export function useDesktopFileMenu({
       transform: { zoom: 1, pan: { x: 0, y: 0 } },
     });
     filePath.clear();
-  }, t("error.openFailed")), [filePath, persistAndApplyDiagram, runAction]);
+  }, t("error.openFailed"), "sql"), [filePath, persistAndApplyDiagram, runAction]);
 
   const exportSql = useCallback(async (dialect) => runAction(async () => {
     const path = await pickSave(`${safeFileName(currentDiagram.name)}_${dialect}.sql`, "sql");
@@ -155,7 +160,7 @@ export function useDesktopFileMenu({
   const importPack = useCallback(async () => runAction(async () => {
     const path = await pickOpen("pack");
     if (path) await openDesktopPath(path);
-  }, t("error.openFailed")), [runAction]);
+  }, t("error.openFailed"), "pack"), [runAction]);
 
   const exportPack = useCallback(async () => runAction(async () => {
     const path = await pickSave("drawdb-project.ddbpack", "pack");
@@ -175,7 +180,7 @@ export function useDesktopFileMenu({
         Toast.error(t("recent.notFound", { path }));
         return;
       }
-      await showDesktopError(error?.message || String(error), t("error.openFailed"));
+      await notifyError(error, { title: t("error.openFailed") });
     }
   }, []);
 

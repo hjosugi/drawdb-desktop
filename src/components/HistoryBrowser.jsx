@@ -10,6 +10,7 @@ import {
   writeHistorySettings,
 } from "../utils/history.js";
 import { t } from "../i18n/index.js";
+import { describeError } from "../desktop/errors.js";
 
 export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, onClose }) {
   const storage = useMemo(() => createTauriHistoryStorage(), []);
@@ -37,7 +38,7 @@ export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, 
           setSelected(found[0] || null);
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || String(err));
+        if (!cancelled) setError(describeError(err).message);
       }
     })();
     return () => { cancelled = true; };
@@ -57,7 +58,7 @@ export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, 
           });
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || String(err));
+        if (!cancelled) setError(describeError(err).message);
       }
     })();
     return () => { cancelled = true; };
@@ -78,7 +79,7 @@ export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, 
     try {
       await openHistoryFolder();
     } catch (err) {
-      setError(err.message || String(err));
+      setError(describeError(err).message);
     }
   }
 

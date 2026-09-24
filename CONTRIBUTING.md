@@ -24,6 +24,22 @@ opening, close/quit handling, installers, updater behavior, or native dialogs
 must also follow the relevant rows in
 [`docs/validation-matrix.md`](docs/validation-matrix.md).
 
+## Error handling
+
+Desktop code follows one error policy (`src/desktop/errors.js`):
+
+- I/O and parsing code throws `DesktopError` with a stable code
+  (`FILE_NOT_FOUND`, `PERMISSION_DENIED`, `INVALID_JSON`, `INVALID_DIAGRAM`,
+  `UNKNOWN_FORMAT`, `ZIP_CORRUPT`, `PACK_INVALID`, `EXCEL_INVALID`,
+  `SQL_NO_TABLES`, ...) or lets the platform error propagate unchanged.
+- UI handlers never show raw exceptions. They call `notifyError(error, { title,
+  kind })`, which classifies platform errors, shows the translated
+  `errorCode.<CODE>` message with the technical detail, and records it in the
+  log. Every code needs English and Japanese text in `src/i18n/desktop/`.
+- Recoverable input problems are reported, not swallowed: a `.ddbpack` with a
+  damaged manifest or unreadable entries imports what it can and lists the
+  skipped entries in a warning.
+
 ## Updating drawDB upstream
 
 The current upstream baseline and integration notes are recorded in

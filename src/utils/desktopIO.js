@@ -93,6 +93,26 @@ export async function showDesktopError(message, title = t("error.title")) {
   await showMessage(String(message), { title, kind: "error" });
 }
 
+export async function showDesktopWarning(message, title = t("error.title")) {
+  if (!isTauri()) return;
+  console.warn(`${title}: ${message}`);
+  const { message: showMessage } = await dlg();
+  await showMessage(String(message), { title, kind: "warning" });
+}
+
+/**
+ * File kind used to classify read errors.
+ * @param {string} path
+ * @returns {"ddb" | "pack" | "xlsx" | "sql"}
+ */
+export function fileKind(path) {
+  const lower = String(path).toLowerCase();
+  if (lower.endsWith(".ddbpack")) return "pack";
+  if (lower.endsWith(".xlsx")) return "xlsx";
+  if (lower.endsWith(".sql")) return "sql";
+  return "ddb";
+}
+
 export async function confirmCloseWithUnsavedChanges() {
   if (!isTauri()) return "cancel";
   const { message } = await dlg();

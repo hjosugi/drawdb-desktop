@@ -13,7 +13,8 @@ import {
   readTextFile,
   requestAppExit,
   serializeDdb,
-  showDesktopError,
+  fileKind,
+  showDesktopWarning,
   writeTextFile,
 } from "../utils/desktopIO.js";
 import {
@@ -24,6 +25,7 @@ import {
 } from "../utils/history.js";
 import { t } from "../i18n/index.js";
 import { createDiagramId, ddbFingerprint, usableDiagramId } from "./diagram.js";
+import { notifyError } from "./errors.js";
 import { recordRecentFile } from "./recentFiles.js";
 import { registerDesktopRuntime } from "./runtime.js";
 import { useDesktopEditorState } from "./useDesktopEditorState.js";
@@ -96,11 +98,14 @@ export function useDesktopWorkspace({
     const lower = path.toLowerCase();
 
     if (lower.endsWith(".ddbpack")) {
-      const { importFromPack } = await import("../utils/ddbpack.js");
+      const { importFromPack, packWarning } = await import("../utils/ddbpack.js");
       const imported = await importFromPack(path, { merge: true });
       if (imported.diagramIds[0]) await openPersistedDiagram(imported.diagramIds[0]);
       clearFilePath();
       await recordRecentFile(path);
+      if (imported.failed.length > 0) {
+        await showDesktopWarning(packWarning(imported), t("pack.partialTitle"));
+      }
       return;
     }
 
@@ -169,7 +174,7 @@ export function useDesktopWorkspace({
       await requestAppExit();
     } catch (error) {
       handlingExitRef.current = false;
-      await showDesktopError(error?.message || String(error), t("error.saveFailed"));
+      await notifyError(error, { title: t("error.saveFailed") });
     }
   }, [saveBeforeExit]);
 
@@ -183,7 +188,7 @@ export function useDesktopWorkspace({
     ) return;
 
     void fileSaverRef.current.flush()
-      .catch((error) => showDesktopError(error?.message || String(error), t("error.saveFailed")))
+      .catch((error) => notifyError(error, { title: t("error.saveFailed") }))
       .finally(() => clearFilePath());
   }, [clearFilePath, diagramId, filePath.diagramId, filePath.path]);
 
@@ -220,12 +225,12 @@ export function useDesktopWorkspace({
           try {
             await openExternalPath(path);
           } catch (error) {
-            await showDesktopError(error?.message || String(error), t("error.openFailed"));
+            await notifyError(error, { title: t("error.openFailed"), kind: fileKind(path) });
           }
         }));
       } catch (error) {
         if (!disposed) {
-          await showDesktopError(error?.message || String(error), t("error.desktopIntegration"));
+          await notifyError(error, { title: t("error.desktopIntegration") });
         }
       }
     })();
@@ -258,3 +263,4 @@ function fileNameWithoutExtension(path) {
 function safeFileName(value) {
   return String(value || "diagram").replace(/[\\/:*?"<>|]/g, "_").slice(0, 100) || "diagram";
 }
+

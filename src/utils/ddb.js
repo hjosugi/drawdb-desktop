@@ -1,4 +1,6 @@
 // @ts-check
+import { DesktopError, ErrorCode } from "../desktop/errors.js";
+
 export const DDB_FORMAT = "drawdb-file";
 export const DDB_VERSION = 1;
 
@@ -71,12 +73,22 @@ export function serializeDdb(diagram, { pretty = true, stable = true, now = new 
  * @returns {import("../types/drawdb").DdbPayload}
  */
 export function parseDdb(text) {
-  const parsed = JSON.parse(text);
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (cause) {
+    throw new DesktopError(ErrorCode.INVALID_JSON, { detail: cause.message, cause });
+  }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("drawDB file must contain a JSON object");
+    throw new DesktopError(ErrorCode.INVALID_DIAGRAM, {
+      message: "drawDB file must contain a JSON object",
+    });
   }
   if (parsed.$format && parsed.$format !== DDB_FORMAT) {
-    throw new Error(`Unknown drawDB file format: ${parsed.$format}`);
+    throw new DesktopError(ErrorCode.UNKNOWN_FORMAT, {
+      message: `Unknown drawDB file format: ${parsed.$format}`,
+      params: { format: parsed.$format },
+    });
   }
   return normalizeDdbPayload(parsed, parsed.lastModified ?? new Date());
 }
@@ -153,7 +165,9 @@ export function validateDdbDiagram(diagram) {
 export function assertValidDdbDiagram(diagram) {
   const result = validateDdbDiagram(diagram);
   if (!result.valid) {
-    throw new Error(`Invalid .ddb diagram:\n${result.errors.map((error) => `- ${error}`).join("\n")}`);
+    throw new DesktopError(ErrorCode.INVALID_DIAGRAM, {
+      message: `Invalid .ddb diagram:\n${result.errors.map((error) => `- ${error}`).join("\n")}`,
+    });
   }
   return diagram;
 }
