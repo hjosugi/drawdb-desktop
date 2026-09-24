@@ -1,6 +1,6 @@
 [package]
 name = "drawdb-desktop"
-version = "1.9.0"
+version = "1.10.0"
 description = "drawDB Desktop Edition"
 authors = ["drawDB"]
 edition = "2021"
