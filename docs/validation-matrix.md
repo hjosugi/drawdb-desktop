@@ -61,7 +61,12 @@ For each target that requires manual release validation, record results in issue
   when the language is changed. On Windows and Linux, confirm no native menu bar
   is shown and Ctrl+N/O/S/Shift+S/W (Ctrl+Q on Linux) work once.
 - Excel export/import round-trip.
-- SQL export for Oracle, MySQL, and PostgreSQL.
+- SQL export for Oracle, MySQL, PostgreSQL, and SQL Server, and "Open SQL"
+  import of each exported file.
+- Schema comparison: compare the open diagram with an older `.ddb`, two `.ddb`
+  files, and a Local History snapshot; confirm the colored change list, the
+  destructive-change warning, the dialect switch, and saving the migration
+  `.sql`. (Applying generated PostgreSQL/MySQL migrations is automated in CI.)
 - EN/JA switching and Japanese IME input.
 - Autosave restore.
 - Install a previous release and verify updater detection, signature validation,

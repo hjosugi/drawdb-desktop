@@ -49,6 +49,57 @@ jobs:
           console.log(rows);
           NODE
 
+  migrations:
+    name: Migration SQL on PostgreSQL and MySQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: drawdb
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: drawdb
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -pdrawdb"
+          --health-interval 5s --health-timeout 5s --health-retries 40
+    env:
+      DRAWDB_TEST_POSTGRES: "1"
+      DRAWDB_TEST_MYSQL: "1"
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: drawdb
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_TCP_PORT: "3306"
+      MYSQL_PWD: drawdb
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Check database clients
+        run: |
+          psql --version
+          mysql --version
+
+      - name: Apply generated migrations to real databases
+        env:
+          DRAWDB_MYSQL_CMD: mysql --protocol=TCP -uroot
+        run: npx vitest run tests/migration-db.test.mjs
+
   frontend:
     name: Integrated frontend (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

@@ -255,6 +255,9 @@ describe("shipped JSON config", () => {
     expect(pkg.devDependencies.typescript).toMatch(/^5\./);
     expect(tsconfig.compilerOptions).toMatchObject({ allowJs: true, noEmit: true });
     expect(ci).toContain("run: npm run typecheck");
+    expect(ci).toContain("run: npx vitest run tests/migration-db.test.mjs");
+    expect(ci).toContain("image: postgres:16-alpine");
+    expect(ci).toContain("image: mysql:8.4");
     for (const name of ["Diagram", "Table", "Field", "Relationship", "DdbPayload"]) {
       expect(types).toContain(`export interface ${name} `);
     }
