@@ -1,3 +1,4 @@
+// @ts-check
 import JSZip from "jszip";
 import { db } from "../data/db";
 import { readBinaryFile, writeBinaryFile, serializeDdb, parseDdb } from "./desktopIO";

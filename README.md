@@ -101,6 +101,7 @@ node scripts/drawdb-cli.mjs import --from sql --dialect mysql schema.sql -o sche
 
 ```sh
 npm run lint
+npm run typecheck
 npm test
 npm run build
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check

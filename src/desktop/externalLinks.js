@@ -1,3 +1,4 @@
+// @ts-check
 import { desktopAvailable } from "../utils/desktopIO.js";
 
 const EXTERNAL_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);

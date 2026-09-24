@@ -1,3 +1,4 @@
+// @ts-check
 // PostgreSQL SQL exporter for drawDB
 import {
   commentOnStatements,
@@ -126,6 +127,10 @@ export const postgresDialect = Object.freeze({
   trailer: [],
 });
 
+/**
+ * @param {import("../../types/drawdb").Diagram} diagram
+ * @returns {string} DDL script
+ */
 export function toPostgres(diagram) {
   return generateDdl(diagram, postgresDialect);
 }

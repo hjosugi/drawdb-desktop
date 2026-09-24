@@ -1,3 +1,4 @@
+// @ts-check
 export function stripSqlComments(sql) {
   const text = String(sql ?? "");
   let out = "";

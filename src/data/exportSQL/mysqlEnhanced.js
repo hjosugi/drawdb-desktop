@@ -1,3 +1,4 @@
+// @ts-check
 // Enhanced MySQL SQL exporter for drawDB (dialect definition for core.js)
 import { enumValues, generateDdl, hasDefault, quoteWith, upperType } from "./core.js";
 
@@ -66,6 +67,10 @@ export const mysqlDialect = Object.freeze({
   foreignKeyActions: { onDelete: "all", onUpdate: "all" },
 });
 
+/**
+ * @param {import("../../types/drawdb").Diagram} diagram
+ * @returns {string} DDL script
+ */
 export function toMySQL(diagram) {
   return generateDdl(diagram, mysqlDialect);
 }

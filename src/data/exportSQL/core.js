@@ -1,3 +1,4 @@
+// @ts-check
 // Shared DDL generation skeleton for the desktop SQL exporters.
 //
 // A dialect is a plain object describing only what differs between databases
@@ -42,7 +43,11 @@ export function enumValues(field, context) {
   return Array.isArray(named?.values) && named.values.length ? named.values : null;
 }
 
-/** Resolves a relationship to table/column names, or null when dangling. */
+/**
+ * Resolves a relationship to table/column names, or null when dangling.
+ * @param {import("../../types/drawdb").Diagram} diagram
+ * @param {import("../../types/drawdb").Relationship} relationship
+ */
 export function resolveRelationship(diagram, relationship) {
   const tables = diagram.tables || [];
   const source = tables.find((table) => table.id === relationship.startTableId);
@@ -133,8 +138,9 @@ function foreignKeyStatement(diagram, relationship, index, dialect) {
 
 /**
  * Generates a DDL script for `diagram` using `dialect`.
- * @param {object} diagram drawDB diagram (tables, relationships, types, enums)
- * @param {object} dialect dialect definition
+ * @param {import("../../types/drawdb").Diagram} diagram
+ * @param {any} dialect dialect definition (see docs/sql-dialects.md)
+ * @returns {string}
  */
 export function generateDdl(diagram, dialect) {
   const context = { diagram, namedEnums: namedEnumMap(diagram) };

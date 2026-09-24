@@ -1,3 +1,4 @@
+// @ts-check
 // Tauri 検知 + fs/dialog/event のラッパ
 import { t } from "../i18n/index.js";
 

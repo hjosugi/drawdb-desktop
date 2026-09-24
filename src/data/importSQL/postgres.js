@@ -1,3 +1,4 @@
+// @ts-check
 // PostgreSQL DDL parser (subset) -> drawDB diagram
 // Handles: CREATE TYPE ... AS ENUM, CREATE TABLE (with SERIAL/NUMERIC/BYTEA/JSONB/
 // multi-word types), inline + table-level PRIMARY KEY/UNIQUE, COMMENT ON TABLE/COLUMN,
@@ -31,6 +32,10 @@ const RE_INLINE_FK = new RegExp(`\\bREFERENCES\\s+(${PG_QUAL_IDENT})\\s*\\(([^)]
 const unquote = (s) => unquoteIdentifier(s);
 const splitCols = (cols) => splitColumnList(cols, unquote);
 
+/**
+ * @param {string} sql DDL script
+ * @returns {import("../../types/drawdb").ImportedSchema}
+ */
 export function fromPostgres(sql) {
   const source = stripSqlComments(sql);
   const tables = [];

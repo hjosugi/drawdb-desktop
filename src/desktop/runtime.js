@@ -1,5 +1,15 @@
+// @ts-check
+/**
+ * @typedef {{
+ *   flush?: () => Promise<void>,
+ *   open?: (path: string) => Promise<unknown>,
+ * }} DesktopRuntimeHandlers
+ */
+
+/** @type {Readonly<DesktopRuntimeHandlers>} */
 let handlers = Object.freeze({});
 
+/** @param {DesktopRuntimeHandlers} nextHandlers */
 export function registerDesktopRuntime(nextHandlers) {
   const registered = Object.freeze({ ...nextHandlers });
   handlers = registered;

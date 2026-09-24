@@ -1,3 +1,4 @@
+// @ts-check
 // Frontend half of the desktop logging pipeline (#13).
 //
 // Uncaught errors, unhandled promise rejections, console.error and

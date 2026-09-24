@@ -25,6 +25,7 @@ git switch main
 scripts/update-upstream-snapshot.sh upstream/main
 npm ci
 npm run lint
+npm run typecheck
 npm test
 npm run build
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check

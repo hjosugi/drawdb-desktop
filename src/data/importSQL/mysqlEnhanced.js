@@ -1,3 +1,4 @@
+// @ts-check
 // MySQL DDL parser (subset) → drawDB diagram
 import {
   addRelationship,
@@ -35,6 +36,10 @@ const RE_INLINE_FK = new RegExp(
 const unq = (s) => unquoteIdentifier(s, { qualified: false });
 const splitCols = (cols) => splitColumnList(cols, unq);
 
+/**
+ * @param {string} sql DDL script
+ * @returns {import("../../types/drawdb").ImportedSchema}
+ */
 export function fromMySQL(sql) {
   const source = stripSqlComments(sql);
   const tables = [];

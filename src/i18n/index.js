@@ -1,3 +1,4 @@
+// @ts-check
 import en from "./desktop/en.js";
 import ja from "./desktop/ja.js";
 

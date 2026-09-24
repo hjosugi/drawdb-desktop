@@ -1,3 +1,4 @@
+// @ts-check
 export const EXCEL_COLORS = {
   brand: "FF175E7A",
   headerText: "FFFFFFFF",

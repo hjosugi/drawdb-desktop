@@ -1,3 +1,4 @@
+// @ts-check
 import { useCallback, useContext, useMemo } from "react";
 import { State } from "../data/constants.js";
 import { db } from "../data/db.js";
@@ -21,6 +22,19 @@ import {
   upsertDdbDiagram,
 } from "./diagram.js";
 
+/**
+ * @typedef {{
+ *   diagramId?: string,
+ *   title?: string,
+ *   setTitle?: (title: string) => void,
+ *   setLastSaved?: (value: string) => void,
+ * }} DesktopEditorOptions
+ */
+
+/**
+ * Bridges the drawDB editor contexts and the desktop file/database layer.
+ * @param {DesktopEditorOptions} [options]
+ */
 export function useDesktopEditorState({
   diagramId,
   title,
@@ -40,9 +54,17 @@ export function useDesktopEditorState({
   const { types, setTypes } = useTypes();
   const { enums, setEnums } = useEnums();
   const { transform, setTransform } = useTransform();
-  const { setRedoStack, setUndoStack } = useUndoRedo();
-  const { setSaveState } = useSaveState();
-  const { setLayout } = useLayout();
+  const { setRedoStack, setUndoStack } = /** @type {{
+    setRedoStack: (stack: unknown[]) => void,
+    setUndoStack: (stack: unknown[]) => void,
+  }} */ (/** @type {unknown} */ (useUndoRedo()));
+  // Upstream contexts are untyped JavaScript; describe the members used here.
+  const { setSaveState } = /** @type {{ setSaveState: (state: unknown) => void }} */ (
+    /** @type {unknown} */ (useSaveState())
+  );
+  const { setLayout } = /** @type {{ setLayout: (update: (previous: any) => any) => void }} */ (
+    /** @type {unknown} */ (useLayout())
+  );
   const filePath = useContext(FilePathContext);
   const navigate = useNavigateWithParams();
 

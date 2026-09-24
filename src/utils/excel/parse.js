@@ -1,3 +1,4 @@
+// @ts-check
 import { RESERVED_SHEET_NAMES, SAMPLE_ROW_LIMIT } from "./constants.js";
 import { mkTable, nextPow2, parseBool, sanitizeColName } from "./helpers.js";
 

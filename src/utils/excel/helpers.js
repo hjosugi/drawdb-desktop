@@ -1,3 +1,4 @@
+// @ts-check
 import { TABLE_COLOR } from "./constants.js";
 
 export function mkTable(id, name, fields, indices, comment) {

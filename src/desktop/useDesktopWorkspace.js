@@ -1,3 +1,4 @@
+// @ts-check
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   confirmCloseWithUnsavedChanges,
@@ -27,6 +28,10 @@ import { recordRecentFile } from "./recentFiles.js";
 import { registerDesktopRuntime } from "./runtime.js";
 import { useDesktopEditorState } from "./useDesktopEditorState.js";
 
+/**
+ * Autosave, external file opening, and the close/quit guard for the editor.
+ * @param {import("./useDesktopEditorState.js").DesktopEditorOptions & { ready?: boolean }} [options]
+ */
 export function useDesktopWorkspace({
   diagramId,
   ready,

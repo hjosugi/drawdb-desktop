@@ -11,6 +11,7 @@ Use Node.js 20.19 or newer and the current stable Rust toolchain.
 ```sh
 npm ci
 npm run lint
+npm run typecheck
 npm test
 npm run build
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check

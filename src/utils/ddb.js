@@ -1,6 +1,13 @@
+// @ts-check
 export const DDB_FORMAT = "drawdb-file";
 export const DDB_VERSION = 1;
 
+/**
+ * Normalizes an editor, database-row, or file diagram into the .ddb payload.
+ * @param {Partial<import("../types/drawdb").Diagram> & Record<string, any>} [diagram]
+ * @param {Date | string | number} [now] timestamp recorded as lastModified
+ * @returns {import("../types/drawdb").DdbPayload}
+ */
 export function normalizeDdbPayload(diagram = {}, now = new Date()) {
   const name = diagram.name ?? diagram.title ?? "Untitled diagram";
   const areas = arrayOrEmpty(diagram.areas ?? diagram.subjectAreas);
@@ -59,6 +66,10 @@ export function serializeDdb(diagram, { pretty = true, stable = true, now = new 
   return stable ? stableStringify(payload, space) : JSON.stringify(payload, null, space);
 }
 
+/**
+ * @param {string} text
+ * @returns {import("../types/drawdb").DdbPayload}
+ */
 export function parseDdb(text) {
   const parsed = JSON.parse(text);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -70,6 +81,10 @@ export function parseDdb(text) {
   return normalizeDdbPayload(parsed, parsed.lastModified ?? new Date());
 }
 
+/**
+ * @param {any} diagram
+ * @returns {import("../types/drawdb").ValidationResult}
+ */
 export function validateDdbDiagram(diagram) {
   const errors = [];
   if (!diagram || typeof diagram !== "object" || Array.isArray(diagram)) {

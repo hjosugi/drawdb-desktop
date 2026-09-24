@@ -1,3 +1,4 @@
+// @ts-check
 import ExcelJS from "exceljs";
 import { readBinaryFile, writeBinaryFile } from "../desktopIO.js";
 import { buildWorkbook } from "./build.js";

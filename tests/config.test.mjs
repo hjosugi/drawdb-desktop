@@ -245,6 +245,31 @@ describe("shipped JSON config", () => {
     expect(existsSync("docs/logging.ja.md")).toBe(true);
   });
 
+  it("type-checks desktop modules against the shared diagram types in CI", () => {
+    const pkg = readJson("package.json");
+    const tsconfig = readJson("tsconfig.json");
+    const ci = readFileSync(".github/workflows/ci.yml", "utf8");
+    const types = readFileSync("src/types/drawdb.d.ts", "utf8");
+
+    expect(pkg.scripts.typecheck).toBe("tsc -p tsconfig.json");
+    expect(pkg.devDependencies.typescript).toMatch(/^5\./);
+    expect(tsconfig.compilerOptions).toMatchObject({ allowJs: true, noEmit: true });
+    expect(ci).toContain("run: npm run typecheck");
+    for (const name of ["Diagram", "Table", "Field", "Relationship", "DdbPayload"]) {
+      expect(types).toContain(`export interface ${name} `);
+    }
+    for (const file of [
+      "src/desktop/diagram.js",
+      "src/desktop/recentFiles.js",
+      "src/desktop/nativeMenu.js",
+      "src/utils/ddb.js",
+      "src/data/exportSQL/core.js",
+      "src/data/importSQL/common.js",
+    ]) {
+      expect(readFileSync(file, "utf8").startsWith("// @ts-check\n")).toBe(true);
+    }
+  });
+
   it("enables Tauri window state persistence for desktop builds", () => {
     const cargoToml = readFileSync("src-tauri/Cargo.toml", "utf8");
     const capabilities = readJson("src-tauri/capabilities/default.json");

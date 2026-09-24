@@ -1,3 +1,4 @@
+// @ts-check
 import ExcelJS from "exceljs";
 import { RESERVED_SHEET_NAMES } from "./constants.js";
 import { bool, uniqueSheetName } from "./helpers.js";

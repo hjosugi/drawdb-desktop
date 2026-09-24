@@ -1,3 +1,4 @@
+// @ts-check
 // Oracle DDL parser (subset) → drawDB diagram
 import {
   addRelationship,
@@ -31,6 +32,10 @@ const oracleActions = (text) => ({
   updateConstraint: "NO ACTION",
 });
 
+/**
+ * @param {string} sql DDL script
+ * @returns {import("../../types/drawdb").ImportedSchema}
+ */
 export function fromOracle(sql) {
   const source = stripSqlComments(sql);
   const tables = [];

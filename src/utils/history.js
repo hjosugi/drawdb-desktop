@@ -1,8 +1,19 @@
+// @ts-check
 import { normalizeDdbPayload, parseDdb, stableStringify } from "./desktopIO.js";
 
 export const HISTORY_ROOT = "history";
 export const HISTORY_FORMAT = "drawdb-history-snapshot";
 export const HISTORY_VERSION = 1;
+/**
+ * @typedef {{
+ *   enabled: boolean,
+ *   maxGenerations: number,
+ *   maxBytes: number,
+ *   minIntervalMs: number,
+ * }} HistorySettings
+ */
+
+/** @type {Readonly<HistorySettings>} */
 export const DEFAULT_HISTORY_SETTINGS = Object.freeze({
   enabled: true,
   maxGenerations: 50,
@@ -52,6 +63,10 @@ export function createTauriHistoryStorage({ root = HISTORY_ROOT } = {}) {
   };
 }
 
+/**
+ * @param {Partial<HistorySettings> | null} [settings]
+ * @returns {HistorySettings}
+ */
 export function normalizeHistorySettings(settings = {}) {
   const merged = { ...DEFAULT_HISTORY_SETTINGS, ...(settings || {}) };
   return {
@@ -120,6 +135,13 @@ export async function createHistorySnapshot(diagram, {
   return snapshotEntry(snapshot, key, file, bytes.byteLength);
 }
 
+/**
+ * @param {{
+ *   diagram?: any,
+ *   sourcePath?: string,
+ *   storage?: ReturnType<typeof createTauriHistoryStorage>,
+ * }} [options]
+ */
 export async function listHistorySnapshots({
   diagram,
   sourcePath = "",
@@ -365,7 +387,7 @@ function byteLength(bytes) {
 }
 
 function clampInt(value, min, max, fallback) {
-  const parsed = Number.parseInt(value, 10);
+  const parsed = Number.parseInt(String(value), 10);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(max, Math.max(min, parsed));
 }

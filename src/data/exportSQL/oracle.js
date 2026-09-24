@@ -1,3 +1,4 @@
+// @ts-check
 // Oracle SQL exporter for drawDB (dialect definition for core.js)
 import {
   commentOnStatements,
@@ -90,6 +91,10 @@ export const oracleDialect = Object.freeze({
   trailer: [],
 });
 
+/**
+ * @param {import("../../types/drawdb").Diagram} diagram
+ * @returns {string} DDL script
+ */
 export function toOracle(diagram) {
   return generateDdl(diagram, oracleDialect);
 }

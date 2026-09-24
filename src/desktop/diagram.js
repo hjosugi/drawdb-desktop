@@ -1,3 +1,4 @@
+// @ts-check
 import {
   assertValidDdbDiagram,
   normalizeDdbPayload,
@@ -10,6 +11,14 @@ export function createDiagramId(crypto = globalThis.crypto) {
   return `drawdb-${Date.now().toString(36)}-${random}`;
 }
 
+/**
+ * @param {{
+ *   diagramId?: string, title?: string, database?: string,
+ *   tables?: any[], relationships?: any[], notes?: any[], areas?: any[],
+ *   types?: any[], enums?: any[], todos?: any[],
+ *   transform?: import("../types/drawdb").Transform,
+ * }} state
+ */
 export function editorStateToDdb({
   diagramId,
   title,

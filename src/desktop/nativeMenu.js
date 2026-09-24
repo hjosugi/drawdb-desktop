@@ -1,3 +1,4 @@
+// @ts-check
 import { useEffect, useRef } from "react";
 import { normalizeLocale, t as translate } from "../i18n/index.js";
 
@@ -81,6 +82,13 @@ const submenu = (id, text, items, extra = {}) => ({ type: "submenu", id, text, i
 /**
  * Builds a serializable description of the macOS menu bar. Kept free of Tauri
  * calls so structure, labels and accelerators are unit-testable.
+ * @param {{
+ *   t?: (key: string, params?: Record<string, unknown>, locale?: string) => string,
+ *   locale?: string,
+ *   appName?: string,
+ *   version?: string,
+ *   recentFiles?: Array<{ path: string, name: string }>,
+ * }} [options]
  */
 export function buildNativeMenuModel({
   t = translate,
@@ -234,7 +242,9 @@ export async function installNativeMenu(model, onAction) {
   const menu = await Menu.new({ items: toTauriMenuOptions(model, onAction) });
   for (const node of model) {
     if (node.type !== "submenu" || !node.role) continue;
-    const entry = await menu.get(node.id);
+    const entry = /** @type {import("@tauri-apps/api/menu").Submenu | null} */ (
+      await menu.get(node.id)
+    );
     if (node.role === "window") await entry?.setAsWindowsMenuForNSApp?.();
     if (node.role === "help") await entry?.setAsHelpMenuForNSApp?.();
   }
