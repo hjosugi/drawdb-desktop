@@ -67,6 +67,7 @@ export default Object.freeze({
 
   "diff.title": "Schema Comparison",
   "diff.currentDiagram": "Current diagram",
+  "diff.historyVersion": "Local history: {{label}}",
   "diff.pickOld": "Choose the older .ddb file",
   "diff.pickNew": "Choose the newer .ddb file",
   "diff.none": "No schema differences.",
@@ -95,6 +96,7 @@ export default Object.freeze({
   "history.close": "Close",
   "history.empty": "No snapshot selected.",
   "history.restore": "Restore This Version",
+  "history.compare": "Compare with Current",
   "history.enabled": "Save local history",
   "history.maxGenerations": "Generations",
   "history.maxMegabytes": "Maximum MB",

@@ -67,6 +67,7 @@ export default Object.freeze({
 
   "diff.title": "スキーマ比較",
   "diff.currentDiagram": "現在のダイアグラム",
+  "diff.historyVersion": "ローカル履歴: {{label}}",
   "diff.pickOld": "古い .ddb ファイルを選択",
   "diff.pickNew": "新しい .ddb ファイルを選択",
   "diff.none": "スキーマの差分はありません。",
@@ -95,6 +96,7 @@ export default Object.freeze({
   "history.close": "閉じる",
   "history.empty": "スナップショットが選択されていません。",
   "history.restore": "この版に戻す",
+  "history.compare": "現在の内容と比較",
   "history.enabled": "ローカル履歴を保存",
   "history.maxGenerations": "保持世代数",
   "history.maxMegabytes": "最大MB",

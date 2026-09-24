@@ -12,7 +12,7 @@ import {
 import { t } from "../i18n/index.js";
 import { describeError } from "../desktop/errors.js";
 
-export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, onClose }) {
+export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, onCompare, onClose }) {
   const storage = useMemo(() => createTauriHistoryStorage(), []);
   const [snapshots, setSnapshots] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -159,9 +159,20 @@ export default function HistoryBrowser({ currentDiagram, sourcePath, onRestore, 
                 <ul className="mb-5 list-disc space-y-1 ps-5">
                   {preview.diff.lines.map((line) => <li key={line}>{line}</li>)}
                 </ul>
-                <button className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" type="button" onClick={restoreSelected}>
-                  {t("history.restore")}
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" type="button" onClick={restoreSelected}>
+                    {t("history.restore")}
+                  </button>
+                  {onCompare ? (
+                    <button
+                      className="rounded border border-zinc-300 px-4 py-2 hover:bg-zinc-100 dark:border-zinc-600 dark:hover:bg-zinc-800"
+                      type="button"
+                      onClick={() => onCompare(preview.payload, new Date(selected.createdAt).toLocaleString())}
+                    >
+                      {t("history.compare")}
+                    </button>
+                  ) : null}
+                </div>
               </>
             ) : <p>{t("history.empty")}</p>}
           </aside>

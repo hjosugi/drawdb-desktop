@@ -389,6 +389,16 @@ export function useDesktopFileMenu({
           currentDiagram={currentDiagram}
           sourcePath={filePath.path}
           onRestore={restoreFromHistory}
+          onCompare={(payload, label) => {
+            setHistoryOpen(false);
+            setComparison({
+              from: payload,
+              to: currentDiagram,
+              fromLabel: t("diff.historyVersion", { label }),
+              toLabel: t("diff.currentDiagram"),
+              dialect: resolveDialect(currentDiagram.database),
+            });
+          }}
           onClose={() => setHistoryOpen(false)}
         />
       ) : null}

@@ -131,6 +131,8 @@ describe("schema comparison UI wiring", () => {
     expect(fileMenu).toContain('tr("menu.compareWithFile"), function: compareWithFile');
     expect(fileMenu).toContain('tr("menu.compareFiles"), function: compareFiles');
     expect(fileMenu).toContain("<SchemaDiffViewer");
+    expect(fileMenu).toContain("onCompare={(payload, label) => {");
+    expect(readFileSync("src/components/HistoryBrowser.jsx", "utf8")).toContain('t("history.compare")');
     expect(viewer).toContain("compareDiagrams(comparison.from, comparison.to, { database: dialect })");
     expect(viewer).toContain('role="alert"');
     for (const action of ["added", "removed", "modified"]) {
