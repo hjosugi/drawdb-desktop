@@ -51,7 +51,7 @@
     "@tauri-apps/plugin-sql": "2.4.0",
     "@tauri-apps/plugin-updater": "2.10.1",
     "@tauri-apps/plugin-window-state": "2.4.1",
-    "axios": "^1.16.0",
+    "axios": "^1.20.0",
     "bootstrap-icons": "1.11.3",
     "dexie": "^3.2.4",
     "dexie-react-hooks": "^1.1.7",
@@ -74,7 +74,7 @@
     "react-dom": "^18.2.0",
     "react-hotkeys-hook": "^4.4.1",
     "react-i18next": "^14.1.1",
-    "react-router-dom": "^6.30.4",
+    "react-router-dom": "^7.18.0",
     "react-tweet": "^3.3.1",
     "usehooks-ts": "^3.1.0",
     "uuid": "^14.0.1"
@@ -99,9 +99,13 @@
     "vitest": "^4.1.9"
   },
   "overrides": {
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "exceljs": {
       "uuid": "11.1.1"
-    }
+    },
+    "fast-copy@>=3.0.0 <3.1.0": "3.1.0",
+    "follow-redirects@>=1.0.0 <1.16.1": "1.16.1",
+    "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
+    "nanoid@>=3.0.0 <3.3.18": "3.3.20"
   }
 }

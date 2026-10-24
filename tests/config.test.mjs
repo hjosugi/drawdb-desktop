@@ -308,7 +308,9 @@ describe("shipped JSON config", () => {
       "updater:default",
     ]));
     expect(cargoToml).toContain("tauri-plugin-process = \"2\"");
-    expect(cargoToml).toContain("tauri-plugin-updater = \"2\"");
+    expect(cargoToml).toContain(
+      'tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls"] }',
+    );
     expect(lib).toContain("tauri_plugin_process::init()");
     expect(lib).toContain("tauri_plugin_updater::Builder::new().build()");
     expect(appUpdates).toContain("@tauri-apps/plugin-updater");
